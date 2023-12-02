@@ -13,7 +13,8 @@ def setup_ui(command_handler: CommandHandler):
                     "del (node_id):                 delete node\n"
                     "mod (node_id) (key) (new_val): modify config\n"
                     "save:                          save config to file\n"
-                    "stop [node_id]:             stop all/selected node")
+                    "stop [node_id]:             stop all/selected node\n"
+                    "exit:                          exit program\n")
     globals['ui'] = TerminalUI(help_message, "Network log", command_handler)
 
 

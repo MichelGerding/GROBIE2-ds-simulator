@@ -16,7 +16,7 @@ class TerminalUI:
         if curses.COLS < 103:
             raise Exception("window to small (minimum 103 columns)")
 
-        self.top_message1 = curses.newwin(7, curses.COLS // 2, 0, 0)
+        self.top_message1 = curses.newwin(8, curses.COLS // 2, 0, 0)
         self.top_message1.addstr(message1)
         self.top_message1.refresh()
 
@@ -24,7 +24,7 @@ class TerminalUI:
         self.top_message2.addstr(message2)
         self.top_message2.refresh()
 
-        self.column1 = curses.newwin(curses.LINES - 8, curses.COLS // 2, 8, 0)
+        self.column1 = curses.newwin(curses.LINES - 9, curses.COLS // 2, 9, 0)
         self.column1.scrollok(True)
         self.column1.refresh()
 
@@ -58,7 +58,7 @@ class TerminalUI:
 
     def run(self):
         while True:
-            self.cmd_input.addstr(0, 0, "Command (ctrl + c to exit): ")
+            self.cmd_input.addstr(0, 0, "Command: ")
             self.cmd_input.refresh()
             cmd = self.cmd_input.getstr().decode('utf-8')
             if cmd != '':

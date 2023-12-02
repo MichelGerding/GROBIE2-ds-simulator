@@ -37,5 +37,4 @@ the commands are as follows:
 - `stop` stops a node from sending measurements
 - `mod (node_id) (key) (value)` changes the config of a node
 - `save` saves the nodes info into a file called `config.csv`
-
-to close the simulator you can use the ctrl+c command.
+- `exit` closes the simulator

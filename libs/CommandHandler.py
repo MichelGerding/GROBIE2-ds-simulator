@@ -1,5 +1,5 @@
 from libs.node.NodeRancher import NodeRancher
-
+import sys
 
 class CommandHandler:
 
@@ -61,5 +61,8 @@ class CommandHandler:
 
                 for node in self.nw.nodes.values():
                     f.write(f'{str(node.node_id)},{str(node.channel)},{str(node.config.measurement_interval)},{str(node.config.requested_replications)}\n')
+
+        elif cwd.startswith('exit'):
+            sys.exit(0)
 
         return cwd
