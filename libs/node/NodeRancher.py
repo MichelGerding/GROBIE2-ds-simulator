@@ -1,6 +1,8 @@
 from libs.node.nodes.RandomNode import RandomNode
 from libs.node.NodeConfig import NodeConfig
-from libs.network.Network import Network
+from libs.network.Network import Network, Message
+
+import json
 
 
 class NodeRancher:
@@ -49,6 +51,18 @@ class NodeRancher:
         for n in self.nodes.values():
             n.start_measurements()
 
-    def update_config(self, node_id: int, key: str, value: str):
-        if node_id in self.nodes:
-            self.nodes[node_id].change_config(key, value)
+    def update_config(self, node_id: int, reps: str, delay: str):
+        """ Send message to update nodes config """
+        if node_id not in self.nodes:
+            print('node not found')
+            return
+
+        new_config = NodeConfig(int(reps), int(delay), self.nodes[node_id].config.replicating_nodes)
+
+        self.network.send_message(Message(
+            message=str(new_config),
+            sending_id=0xFF,
+            receiving_id=node_id,
+            channel=0x00
+        ))
+

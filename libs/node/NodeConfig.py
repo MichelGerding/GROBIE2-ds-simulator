@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 import json
 
+
 @dataclass
 class ReplicationInfo:
     node_id: int
@@ -12,6 +13,7 @@ class ReplicationInfo:
             'node_id': self.node_id,
             'hops': self.hops
         }, sort_keys=True)
+
 
 @dataclass
 class NodeConfig:
@@ -31,7 +33,7 @@ class NodeConfig:
 
         replicating_nodes_json = []
         for r in self.replicating_nodes:
-            replicating_nodes_json.append({hex(r.node_id): r.hops})
+            replicating_nodes_json.append({'node_id': hex(r.node_id), 'hops': r.hops})
 
         return json.dumps({
             'requested_replications': self.requested_replications,

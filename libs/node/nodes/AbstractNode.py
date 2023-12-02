@@ -20,15 +20,10 @@ class AbstractNode(ABC):
         network.subscribe_to_messages(self)
 
     def on_message(self, message: Message):
-        if message.receiving_id != 0xFF and message.receiving_id != self.node_id and message.receiving_id != self.node_id:
-            print ('incorrect id ', message.receiving_id, type(message.receiving_id))
-            return
-
-        if message.channel != 0xFF and message.channel != self.channel:
-            print ('incorrect channel ', message.channel, type(message.channel))
-            return
-
-        self.handle_message(message)
+        # if the message is for me or broadcast to all nodes we will handle it.
+        # except if it im the sender.
+        if (message.receiving_id == self.node_id or message.receiving_id == 0xFF) and message.sending_id != self.node_id:
+            self.handle_message(message)
 
     def __str__(self):
         return json.dumps({

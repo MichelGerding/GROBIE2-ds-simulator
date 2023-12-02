@@ -1,0 +1,66 @@
+[
+  {
+    "node_id": 1,
+    "channel": 2,
+    "config": {
+      "measurement_interval": 5,
+      "requested_replications": 1,
+      "replicating_nodes": [
+        2
+      ]
+    },
+    "ledger": [
+      {
+        "node_id": 2,
+        "requested_replications": 1,
+        "replicating_nodes": []
+      },
+      {
+        "node_id": 1,
+        "requested_replications": 1,
+        "replicating_nodes": [
+          {
+            "hops": 1,
+            "node_id": "0x2"
+          }
+        ]
+      },
+      {
+        "node_id": 255,
+        "requested_replications": 10,
+        "replicating_nodes": []
+      }
+    ]
+  },
+  {
+    "node_id": 2,
+    "channel": 2,
+    "config": {
+      "measurement_interval": 5.0,
+      "requested_replications": 10,
+      "replicating_nodes": []
+    },
+    "ledger": [
+      {
+        "node_id": 2,
+        "requested_replications": 1,
+        "replicating_nodes": []
+      },
+      {
+        "node_id": 1,
+        "requested_replications": 1,
+        "replicating_nodes": [
+          {
+            "hops": 1,
+            "node_id": "0x2"
+          }
+        ]
+      },
+      {
+        "node_id": 255,
+        "requested_replications": 10,
+        "replicating_nodes": []
+      }
+    ]
+  }
+]

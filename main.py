@@ -9,12 +9,12 @@ from globals import globals
 
 def setup_ui(command_handler: CommandHandler):
     help_message = ("command log \n"
-                    "create (node_id) (channel):    create a new node\n"
-                    "del (node_id):                 delete node\n"
-                    "mod (node_id) (key) (new_val): modify config\n"
+                    "create (node_id) (channel):      create a new node\n"
+                    "del (node):                            delete node\n"
+                    "mod (node) (replications) (delay):   modify config\n"
                     "save:                          save config to file\n"
                     "stop [node_id]:             stop all/selected node\n"
-                    "exit:                          exit program\n")
+                    "exit:                                 exit program\n")
     globals['ui'] = TerminalUI(help_message, "Network log", command_handler)
 
 
