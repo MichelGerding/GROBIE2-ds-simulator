@@ -1,7 +1,6 @@
 from abc import abstractmethod, ABC
 
-from Network import Network, Message
-
+from libs.network.Network import *
 
 class AbstractNode(ABC):
     node_id: int
