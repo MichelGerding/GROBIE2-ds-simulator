@@ -1,4 +1,5 @@
 venv/
 _**
-.idea
+.idea/
 config.csv
+tmp/

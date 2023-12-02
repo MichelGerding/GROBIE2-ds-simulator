@@ -1,4 +1,5 @@
 from libs.node.NodeRancher import NodeRancher
+from libs.node.NodeConfig import ReplicationInfo
 import sys
 
 class CommandHandler:
@@ -15,8 +16,12 @@ class CommandHandler:
             parts = cwd.split(' ')
             node_id = int(parts[1], 16)
             channel = int(parts[2], 16)
+            try:
+                nodes_replicating = [ReplicationInfo(int(i, 16), 1) for i in parts[3].split(',')]
+            except:
+                nodes_replicating = []
 
-            self.nw.create_node(node_id, channel)
+            self.nw.create_node(node_id, channel, nodes_replicating)
 
             print('create node')
 
@@ -56,11 +61,9 @@ class CommandHandler:
             print('mod node')
 
         elif cwd.startswith('save'):
-            with open('config.csv', 'w') as f:
-                f.write('node_id,channel,measurement_interval,requested_replications\n')
-
-                for node in self.nw.nodes.values():
-                    f.write(f'{str(node.node_id)},{str(node.channel)},{str(node.config.measurement_interval)},{str(node.config.requested_replications)}\n')
+            with open('config.json', 'w') as f:
+               # write the json to the file
+                f.write('[' + ', '.join([str(i) for i in self.nw.nodes.values()]) +']')
 
         elif cwd.startswith('exit'):
             sys.exit(0)

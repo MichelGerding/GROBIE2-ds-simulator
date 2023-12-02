@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 
+
 @dataclass
 class Message:
     # make sure the message arrives at the correct node

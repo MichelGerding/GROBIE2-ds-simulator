@@ -1,16 +1,21 @@
 from abc import abstractmethod, ABC
 
+from libs.node.NodeConfig import NodeConfig
 from libs.network.Network import *
+
+import json
+
 
 class AbstractNode(ABC):
     node_id: int
     channel: int
     network: Network
 
-    def __init__(self, network: Network, node_id: int, channel: int):
+    def __init__(self, network: Network, node_id: int, channel: int, config: NodeConfig):
         self.network = network
         self.node_id = node_id
         self.channel = channel
+        self.config = config
 
         network.subscribe_to_messages(self)
 
@@ -24,6 +29,18 @@ class AbstractNode(ABC):
             return
 
         self.handle_message(message)
+
+    def __str__(self):
+        return json.dumps({
+            'node_id': self.node_id,
+            'channel': self.channel,
+            'config': {
+                'measurement_interval': self.config.measurement_interval,
+                'requested_replications': self.config.requested_replications,
+                'replicating_nodes': [{hex(i.node_id): i.hops} for i in self.config.replicating_nodes]
+
+            }
+        }, sort_keys=True)
 
     @abstractmethod
     def handle_message(self, message: Message):

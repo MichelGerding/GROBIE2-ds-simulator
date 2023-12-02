@@ -11,10 +11,10 @@ class NodeRancher:
         self.network = network
         self.nodes = {}
 
-    def create_node(self, node_id, channel):
+    def create_node(self, node_id, channel, nodes_replicating):
         """ Create a new node with default config. if node with id exists it will be replaced """
 
-        config = NodeConfig(1, 5)
+        config = NodeConfig(1, 5, nodes_replicating)
         n = RandomNode(self.network, node_id, channel, config)
 
         if node_id in self.nodes:

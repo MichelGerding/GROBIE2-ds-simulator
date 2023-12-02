@@ -3,14 +3,20 @@ from libs.node.nodes.AbstractNode import AbstractNode
 from libs.RepeatedTimer import RepeatedTimer
 from libs.node.NodeConfig import NodeConfig
 
+from datetime import datetime, timezone
+from tinyflux import TinyFlux, Point
 from dataclasses import dataclass
 from globals import globals
 from random import random
 
 import math
 import json
+import os
 
 
+
+# message structure
+# type{num 0 - 6} | message
 
 
 @dataclass
@@ -33,20 +39,34 @@ class RandomNode(AbstractNode):
     repeated_timer: RepeatedTimer
 
     def __init__(self, network: Network, node_id: int, channel: int, config: NodeConfig):
-        super().__init__(network, node_id, channel)
-        self.repeated_timer = RepeatedTimer(config.measurement_interval, self.send_measurement)
+        super().__init__(network, node_id, channel, config)
+        self.repeated_timer = RepeatedTimer(config.measurement_interval, self.measure)
         self.config = config
 
-    def send_measurement(self):
+        # setup db
+        self.path = f'./tmp/{datetime.now(timezone.utc).timestamp()}_{math.floor(random() * 92121)}_{node_id}.db'
+
+        if not os.path.exists('./tmp'):
+            os.mkdir('./tmp')
+        print('abs path: ' + os.path.abspath(self.path))
+
+        self.db = TinyFlux(self.path)
+
+    def measure(self):
         temp = random() * 5 + 17.5
         light = math.floor(random() * 1000)
 
-        self.send_message(0xFF, str(Measurement(
-            temp, light
-        )), 0xFF)
+        m = Measurement(temp, light)
+        p = Point(
+            time=datetime.now(timezone.utc),
+            tags={"node": hex(self.node_id)},
+            fields={"temp": m.temp, "light": m.light}
+        )
+
+        self.db.insert(p)
+        self.send_message(0xFF, str(m), 0xFF)
 
     def handle_message(self, message: Message):
-
         # check if we send it
         if message.sending_id == self.node_id:
             return
@@ -57,11 +77,24 @@ class RandomNode(AbstractNode):
         # check if it is the correct channel
         if message.channel != 0xFF and message.channel != self.channel:
             return
+
         globals['ui'].add_text_to_column2(f'node {self.node_id} got message from node: {message.sending_id}')
+
+        # check if we are replicating this node
+        if message.sending_id in [r.node_id for r in self.config.replicating_nodes]:
+            m = Measurement(**json.loads(message.message))
+            p = Point(
+                time=datetime.now(timezone.utc),
+                tags={"node": hex(message.sending_id)},
+                fields={"temp": m.temp, "light": m.light}
+            )
+
+            self.db.insert(p)
+            globals['ui'].add_text_to_column2(f'\tnode {self.node_id} replicated node {message.sending_id}')
 
     def start_measurements(self):
         self.repeated_timer.start()
-        
+
     def stop_measurements(self):
         self.repeated_timer.stop()
 
