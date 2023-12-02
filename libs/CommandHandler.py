@@ -1,7 +1,6 @@
-import jsonpickle
-
 from libs.node.NodeRancher import NodeRancher
-from libs.node.NodeConfig import ReplicationInfo
+from globals import globals
+
 import json
 import sys
 
@@ -16,18 +15,14 @@ class CommandHandler:
             return
 
         if cwd.startswith('create'):
-            # get the node id and channel
             parts = cwd.split(' ')
-            node_id = int(parts[1], 16)
-            channel = int(parts[2], 16)
-            try:
-                nodes_replicating = [ReplicationInfo(int(i, 16), 1) for i in parts[3].split(',')]
-            except:
-                nodes_replicating = []
+            for p in parts[1:]:
+                if not p.isdigit():
+                    continue
 
-            self.nr.create_node(node_id, channel, nodes_replicating)
-
-            print('create node')
+                node_id = int(p, 16)
+                self.nr.create_node(node_id)
+                print('create node')
 
         elif cwd.startswith('delete'):
             parts = cwd.split(' ')
@@ -71,7 +66,6 @@ class CommandHandler:
                 for node in self.nr.nodes.values():
                     nodes_obj.append({
                         'node_id': node.node_id,
-                        'channel': node.channel,
                         'config': {
                             'measurement_interval': node.config.measurement_interval,
                             'requested_replications': node.config.requested_replications,
@@ -90,5 +84,8 @@ class CommandHandler:
 
         elif cwd.startswith('exit'):
             sys.exit(0)
+
+        else:
+            globals['ui'].add_text_to_column2('unknown command: ' + cwd)
 
         return cwd

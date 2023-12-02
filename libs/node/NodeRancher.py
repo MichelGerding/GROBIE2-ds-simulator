@@ -13,11 +13,10 @@ class NodeRancher:
         self.network = network
         self.nodes = {}
 
-    def create_node(self, node_id, channel, nodes_replicating):
+    def create_node(self, node_id):
         """ Create a new node with default config. if node with id exists it will be replaced """
-
-        config = NodeConfig(1, 5, nodes_replicating)
-        n = RandomNode(self.network, node_id, channel, config)
+        config = NodeConfig(1, 5, [])
+        n = RandomNode(self.network, node_id, config)
 
         if node_id in self.nodes:
             self.nodes[node_id].stop_measurements()
@@ -30,10 +29,7 @@ class NodeRancher:
         del self.nodes[node_id]
 
     def stop_node(self, node_id=None):
-        """
-            Stop a node.
-            if no node_id is provided we will stop all nodes
-        """
+        """ Stop a node. if no node_id is provided we will stop all nodes """
         if node_id:
             return self.nodes[node_id].stop_measurements()
 
@@ -41,10 +37,7 @@ class NodeRancher:
             n.stop_measurements()
 
     def start_node(self, node_id=None):
-        """
-            Start a node.
-            if no node_id is provided all nodes will be stopped
-        """
+        """ Start a node. if no node_id is provided all nodes will be stopped """
         if node_id:
             return self.nodes[node_id].start_measurements()
 
@@ -52,7 +45,8 @@ class NodeRancher:
             n.start_measurements()
 
     def update_config(self, node_id: int, reps: str, delay: str):
-        """ Send message to update nodes config """
+        """ Send message to update nodes config.
+            this will use the same method as a node would use to update its config """
         if node_id not in self.nodes:
             print('node not found')
             return

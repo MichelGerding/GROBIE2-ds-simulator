@@ -9,7 +9,7 @@ from globals import globals
 
 def setup_ui(command_handler: CommandHandler):
     help_message = ("command log \n"
-                    "create (node_id) (channel):      create a new node\n"
+                    "create (node_ids, *): create one or more new nodes\n"
                     "del (node):                            delete node\n"
                     "mod (node) (replications) (delay):   modify config\n"
                     "save:                          save config to file\n"
