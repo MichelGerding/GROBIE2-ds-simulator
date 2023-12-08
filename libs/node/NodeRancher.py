@@ -1,9 +1,7 @@
 from libs.node.nodes.RandomNode import RandomNode
 from libs.node.NodeConfig import NodeConfig
-from libs.network.Network import Network, Message
-
-import json
-
+from libs.network.Message import Message
+from libs.network.Network import Network
 
 class NodeRancher:
     """ Node rancher. control and configure the nodes. """
@@ -13,10 +11,10 @@ class NodeRancher:
         self.network = network
         self.nodes = {}
 
-    def create_node(self, node_id):
+    def create_node(self, node_id, x, y, r):
         """ Create a new node with default config. if node with id exists it will be replaced """
-        config = NodeConfig(1, 5, [])
-        n = RandomNode(self.network, node_id, config)
+        config = NodeConfig(10, 5, [])
+        n = RandomNode(self.network, node_id, config, x, y, r)
 
         if node_id in self.nodes:
             self.nodes[node_id].stop_measurements()
@@ -52,11 +50,13 @@ class NodeRancher:
             return
 
         new_config = NodeConfig(int(reps), int(delay), self.nodes[node_id].config.replicating_nodes)
+        self.nodes[node_id].config = new_config
 
-        self.network.send_message(Message(
-            message=str(new_config),
-            sending_id=0xFF,
-            receiving_id=node_id,
-            channel=0x00
-        ))
+        # TODO:: fix it so we can send messages from client to all nodes
+        # self.network.send_message(Message(
+        #     message=str(new_config),
+        #     sending_id=0xFF,
+        #     receiving_id=node_id,
+        #     channel=0x00
+        # ))
 

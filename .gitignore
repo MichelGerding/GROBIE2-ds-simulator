@@ -1,5 +1,7 @@
 venv/
 _**
 .idea/
-config.csv
+config.json
 tmp/
+
+test.ipynb
