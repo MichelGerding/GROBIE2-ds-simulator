@@ -32,7 +32,7 @@ the simulator is not tested on macOS. if you have any issues running it on macos
 ## simulator commands
 the simulator has a few commands you can use to interact with it. these commands are shown in the simulator tui.
 the commands are as follows:
-- `create (node_id) (channel)` creates a new node 
+- `create (node_ids, *)` creates one or more new nodes 
 - `del (node_id)` deletes a node 
 - `stop` stops a node from sending measurements
 - `mod (node_id) (key) (value)` changes the config of a node
