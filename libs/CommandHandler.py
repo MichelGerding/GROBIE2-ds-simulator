@@ -1,14 +1,21 @@
+import os
+
 from libs.node.NodeRancher import NodeRancher
 
-from globals import globals
-
+import time
 import json
-import sys
 
 
 class CommandHandler:
+    filename = f'tmp/commands/cmds_{time.time()}.txt'
+
     def __init__(self, nr: NodeRancher):
         self.nr = nr
+
+        # create the file
+        os.makedirs(os.path.dirname(self.filename), exist_ok=True)
+        with open(self.filename, 'w') as f:
+            f.write('')
 
     def handle(self, cwd: str):
 
@@ -19,6 +26,10 @@ class CommandHandler:
 
         # dynamically call the handler method. this way we can quickly add new commands
         if hasattr(self, 'handle_' + cmd + '_command'):
+            # log the command in a file
+            with open(self.filename, 'a') as f:
+                f.write(cwd + '\n')
+
             return getattr(self, 'handle_' + cmd + '_command')(cwd)
         else:
             return 'unknown command: ' + cwd
@@ -29,7 +40,7 @@ class CommandHandler:
     def handle_save_command(self, cwd):
         """ save the current state of the network to a json file """
         # check if a file name is given
-        filename = 'config.json'
+        filename = 'tmp/config.json'
         print(cwd.split(' '))
         if len(cwd.split(' ')) > 1:
             filename = cwd.split(' ')[1]
@@ -70,7 +81,6 @@ class CommandHandler:
         self.nr.delete_node(node_id)
         return f'deleted node {node_id}'
 
-
     def handle_create_command(self, cwd):
         """ create a new node with the given id, position and range.
             cmd: `create {node_id} {x} {y} {range}` """
@@ -95,4 +105,21 @@ class CommandHandler:
             g.draw(cwd.split(' ')[1])
         else:
             g.draw()
+
+    def handle_load_command(self, cwd):
+        """ load a network from a text file
+            cmd: `load [filename]` """
+        filename = 'cmds_load.txt'
+        if len(cwd.split(' ')) > 1:
+            filename = cwd.split(' ')[1]
+
+        with open(filename, 'r') as f:
+            for line in f.readlines():
+                self.handle(line.strip())
+
+    def handle_exit_command(self, cwd):
+        """ exit the program
+            cmd: `exit` """
+        self.nr.stop_node()
+        exit()
 

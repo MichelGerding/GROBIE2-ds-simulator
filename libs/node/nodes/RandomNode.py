@@ -38,10 +38,10 @@ class RandomNode(NetworkNode):
         # generate a random file path. this is where the database will be stored.
         # the database used for testing will make use of a csv file for easy reading.
         # the database used for the final product will use a sqlite database.
-        self.path = f'./tmp/{datetime.now(timezone.utc).timestamp()}_{math.floor(random() * 92121)}_{node_id}.csv'
+        self.path = f'./tmp/databases/{datetime.now(timezone.utc).timestamp()}_{math.floor(random() * 92121)}_{node_id}.csv'
 
-        if not os.path.exists('./tmp'):
-            os.mkdir('./tmp')
+        # make sure the directory exists
+        os.makedirs(os.path.dirname(self.path), exist_ok=True)
 
         # TODO:: change to sqlite
         self.db = TinyFlux(self.path)
