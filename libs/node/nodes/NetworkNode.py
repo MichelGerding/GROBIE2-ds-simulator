@@ -39,7 +39,7 @@ class NetworkNode(ABC):
             self.handle_message(message)
 
     def propagate_message(self, message: Message):
-        # TODO:: implement algorithm to propagate messages
+        # TODO:: implement efficient routing algorithm
         message.hops += 1
         self.network.send_message(message, self)
 
@@ -49,16 +49,22 @@ class NetworkNode(ABC):
         raise NotImplementedError("Method is abstract and not implemented")
 
     def __str__(self):
-        return f'({self.x}, {self.y}, {self.r})'
+        return '({self.x}, {self.y}, {self.r})'
 
-    def send_message(self, receiving_id: int, message, channel):
+    def send_message(self, receiving_id: int, payload, channel):
         """ send a message to the network """
+
+        # create a message id which consists of the node id and a counter converted to bytes seperated with '|'
+        nid_bytes = self.node_id.to_bytes(2, 'big')
+        counter_bytes = self.messages_send_counter.to_bytes(6, 'big')
+        msg_id = b'|'.join([nid_bytes, counter_bytes])
+
         self.network.send_message(Message(
-            payload=message,
+            payload=payload,
             sending_id=self.node_id,
             receiving_id=receiving_id,
             channel=channel,
-            msg_id=f'{self.node_id}|{self.messages_send_counter}',
+            msg_id=msg_id,
         ), self)
 
         self.messages_send_counter += 1

@@ -11,5 +11,5 @@ class Message:
     payload: str
 
     # routing info
-    msg_id: str
+    msg_id: bytes
     hops: int = 0
