@@ -9,3 +9,7 @@ class Message:
     channel: int
 
     message: str
+
+    # routing info
+    msg_id: str
+    hops: int = 0

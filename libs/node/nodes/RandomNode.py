@@ -38,10 +38,10 @@ class RandomNode(NetworkNode):
         # generate a random file path. this is where the database will be stored.
         # the database used for testing will make use of a csv file for easy reading.
         # the database used for the final product will use a sqlite database.
-        self.path = f'./tmp/{datetime.now(timezone.utc).timestamp()}_{math.floor(random() * 92121)}_{node_id}.csv'
+        self.path = f'./tmp/databases/{datetime.now(timezone.utc).timestamp()}_{math.floor(random() * 92121)}_{node_id}.csv'
 
-        if not os.path.exists('./tmp'):
-            os.mkdir('./tmp')
+        # make sure the directory exists
+        os.makedirs(os.path.dirname(self.path), exist_ok=True)
 
         # TODO:: change to sqlite
         self.db = TinyFlux(self.path)
@@ -69,7 +69,6 @@ class RandomNode(NetworkNode):
         if message.channel == ChannelID.CONFIG.value:
             self.handle_config_message(message)
         elif message.channel == ChannelID.MEASUREMENT.value:
-            print(message)
             self.handle_measurement_message(message)
         elif message.channel == ChannelID.DISCOVERY.value:
             self.handle_discovery_message(message)
@@ -125,11 +124,9 @@ class RandomNode(NetworkNode):
             return self.send_message(message.sending_id, '', ChannelID.DISCOVERY.value)
 
         # at this point we know who the node is and we have its config
-        print([i['node_id'] for i in self.ledger[message.sending_id].replicating_nodes], self.node_id)
         if self.node_id in [int(i['node_id'], 16) for i in self.ledger[message.sending_id].replicating_nodes]:
             # if we are already replicating this node we will store the measurement
             m = Measurement(**json.loads(message.message))
-            print(m)
             self.db.insert(Point(
                 time=datetime.now(timezone.utc),
                 tags={"node": hex(message.sending_id)},
@@ -154,6 +151,7 @@ class RandomNode(NetworkNode):
         nodes = list(self.replication_bids.keys())
         if len(nodes) == 0:
             globals['ui'].add_text_to_column2('no nodes have bid')
+            return
 
         random_nodes = []
         for i in range(winner_count):
@@ -163,7 +161,6 @@ class RandomNode(NetworkNode):
             random_nodes.append(nodes.pop(math.floor(random() * len(nodes))))
 
         # update the config and send it to the network
-        # TODO:: keep track of the hops to a node
         self.config.replicating_nodes = [ReplicationInfo(i, 1) for i in random_nodes]
         self.send_message(0xFF, str(self.config), ChannelID.CONFIG.value)
 
