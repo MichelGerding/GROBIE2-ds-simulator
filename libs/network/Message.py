@@ -8,7 +8,7 @@ class Message:
     sending_id: int
     channel: int
 
-    message: str
+    payload: str
 
     # routing info
     msg_id: str

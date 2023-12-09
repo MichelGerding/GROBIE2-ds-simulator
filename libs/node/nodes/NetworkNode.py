@@ -41,7 +41,7 @@ class NetworkNode(ABC):
     def propagate_message(self, message: Message):
         # TODO:: implement algorithm to propagate messages
         message.hops += 1
-        self.send_message(message.receiving_id, message.message, message.channel)
+        self.network.send_message(message, self)
 
     @abstractmethod
     def handle_message(self, message: Message):
@@ -51,10 +51,10 @@ class NetworkNode(ABC):
     def __str__(self):
         return f'({self.x}, {self.y}, {self.r})'
 
-    def send_message(self, receiving_id, message, channel):
+    def send_message(self, receiving_id: int, message, channel):
         """ send a message to the network """
         self.network.send_message(Message(
-            message=message,
+            payload=message,
             sending_id=self.node_id,
             receiving_id=receiving_id,
             channel=channel,

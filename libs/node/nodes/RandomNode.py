@@ -43,7 +43,7 @@ class RandomNode(NetworkNode):
         # make sure the directory exists
         os.makedirs(os.path.dirname(self.path), exist_ok=True)
 
-        # TODO:: change to sqlite
+        # TODO:: change to sqlite for improved capacity
         self.db = TinyFlux(self.path)
 
     def measure(self):
@@ -84,7 +84,7 @@ class RandomNode(NetworkNode):
         """ if we get a message on the config channel we will update the ledger with this config.
             if the message is for us, we will also update our config """
 
-        config = NodeConfig(**json.loads(message.message))
+        config = NodeConfig(**json.loads(message.payload))
         self.ledger[message.sending_id] = config
 
         if message.receiving_id == self.node_id:
@@ -107,7 +107,9 @@ class RandomNode(NetworkNode):
             self.replication_bidding_timer.start()
 
         # add the bid to the list of bids
-        self.replication_bids[message.sending_id] = int(message.message)
+        self.replication_bids[message.sending_id] = int(message.payload)
+
+        globals['logger'].print(f'{self.node_id}, {self.replication_bids}')
 
     def handle_measurement_message(self, message: Message):
         """ handle messages that contain measurements we will only store the measurements if we know the node that
@@ -126,7 +128,7 @@ class RandomNode(NetworkNode):
         # at this point we know who the node is and we have its config
         if self.node_id in [int(i['node_id'], 16) for i in self.ledger[message.sending_id].replicating_nodes]:
             # if we are already replicating this node we will store the measurement
-            m = Measurement(**json.loads(message.message))
+            m = Measurement(**json.loads(message.payload))
             self.db.insert(Point(
                 time=datetime.now(timezone.utc),
                 tags={"node": hex(message.sending_id)},

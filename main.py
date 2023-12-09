@@ -1,9 +1,8 @@
-from libs.network.Network import Network
-from libs.node.NodeRancher import NodeRancher
 from libs.CommandHandler import CommandHandler
-
+from libs.node.NodeRancher import NodeRancher
+from libs.network.Network import Network
 from libs.TerminalUI import TerminalUI
-
+from libs.Logger import Logger
 from globals import globals
 
 
@@ -27,6 +26,8 @@ def start_ui():
 
 def main():
     # init
+    globals['logger'] = Logger('tmp/log.txt')
+
     network = Network()
     nw = NodeRancher(network)
     chd = CommandHandler(nw)

@@ -1,9 +1,10 @@
-import os
-
 from libs.node.NodeRancher import NodeRancher
+from globals import globals
 
-import time
+import pickle
 import json
+import time
+import os
 
 
 class CommandHandler:
@@ -14,8 +15,7 @@ class CommandHandler:
 
         # create the file
         os.makedirs(os.path.dirname(self.filename), exist_ok=True)
-        with open(self.filename, 'w') as f:
-            f.write('')
+        self.file = open(self.filename, 'w')
 
     def handle(self, cwd: str):
 
@@ -27,8 +27,8 @@ class CommandHandler:
         # dynamically call the handler method. this way we can quickly add new commands
         if hasattr(self, 'handle_' + cmd + '_command'):
             # log the command in a file
-            with open(self.filename, 'a') as f:
-                f.write(cwd + '\n')
+            self.file.write(cwd + '\n')
+            self.file.flush()
 
             return getattr(self, 'handle_' + cmd + '_command')(cwd)
         else:
@@ -41,7 +41,6 @@ class CommandHandler:
         """ save the current state of the network to a json file """
         # check if a file name is given
         filename = 'tmp/config.json'
-        print(cwd.split(' '))
         if len(cwd.split(' ')) > 1:
             filename = cwd.split(' ')[1]
 
@@ -122,4 +121,30 @@ class CommandHandler:
             cmd: `exit` """
         self.nr.stop_node()
         exit()
+
+    def handle_pickle_command(self, cwd):
+        """ pickle the network
+            cmd: `pickler` """
+        # convert the nodes config to a dict
+        nodes = [{
+            'node_id': node.node_id,
+            'config': {
+                'measurement_interval': node.config.measurement_interval,
+                'requested_replications': node.config.requested_replications,
+                'replicating_nodes': [i.node_id for i in node.config.replicating_nodes]
+            },
+            'ledger': [
+                {
+                    'node_id': key,
+                    'requested_replications': value.requested_replications,
+                    'replicating_nodes': [i for i in value.replicating_nodes]
+                } for key, value in node.ledger.items()
+            ]
+        } for node in self.nr.nodes.values()]
+
+        # pickle the network
+        with open('tmp/pickled_network.pkl', 'wb') as f:
+            f.write(pickle.dumps(nodes))
+
+        return 'pickled network'
 

@@ -46,7 +46,7 @@ class NodeRancher:
         """ Send message to update nodes config.
             this will use the same method as a node would use to update its config """
         if node_id not in self.nodes:
-            print('node not found')
+            globals['logger'].print('node not found')
             return
 
         new_config = NodeConfig(int(reps), int(delay), self.nodes[node_id].config.replicating_nodes)
