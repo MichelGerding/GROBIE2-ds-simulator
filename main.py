@@ -1,4 +1,5 @@
 import argparse
+import sys
 
 from libs.network.networks.Network import Network
 from libs.node.NodeRancher import NodeRancher
@@ -10,40 +11,40 @@ from globals import globals
 
 def setup_ui(command_handler: CommandHandler):
     help_message = ("command log \n"
-                    "create (node_id) (x) (y) (power):     create nodes\n"
-                    "del (node):                            delete node\n"
-                    "mod (node) (replications) (delay):   modify config\n"
-                    "save/print [filepath]:save config/network to file")
-    globals['ui'] = TerminalUI(help_message, "Network log", command_handler)
+                    "load [file]                 run commands from file\n"
+                    "create (node_id) (x) (y) (power)      create nodes\n"
+                    "delete (node_id)                       delete node\n"
+                    "modify (node) (replications) (delay) modify config\n"
+                    "save/print [file]      save config/network to file")
+    return TerminalUI(help_message, "Network log", command_handler)
 
-
-def start_ui():
-    try:
-        globals['ui'].draw()
-        print('press enter to quit')
-        globals['ui'].run()
-    except KeyboardInterrupt:
-        pass
-
-
-def main():
+def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--port', type=int, default=9174)
+    parser.add_argument('--log', type=str, default='tmp/log.txt')
     args = parser.parse_args()
+    return args
 
-    # initialization
-    globals['logger'] = Logger('tmp/log.txt')
+def main():
+    args = parse_args()
+    globals['args'] = args
 
+    # setup logger to capture stdout.
+    sys.stdout = Logger(args.log)
+
+    # setup network, node rancher and command handler
     network = Network(args.port)
     nw = NodeRancher(network)
     chd = CommandHandler(nw)
+    globals['ui'] = setup_ui(chd)
 
-    # setup
-    setup_ui(chd)
 
-    # start
-    # !!!!!!!!!! BLOCKING WHILE LOOP !!!!!!!!!!!!
-    start_ui()
+    # draw and run the ui
+    try:
+        globals['ui'].draw()
+        globals['ui'].run()  # blocking
+    except KeyboardInterrupt:
+        pass
 
     # shutdown
     nw.stop_node()

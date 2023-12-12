@@ -36,7 +36,6 @@ class ServerSocketNode(BaseNode):
 
     def rec_message(self, message):
         # send message over socket
-        print('hello', message)
         self.socket.sendall(pickle.dumps(message))
 
     def send_message(self, message: Message):

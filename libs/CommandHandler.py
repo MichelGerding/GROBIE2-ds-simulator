@@ -31,7 +31,7 @@ class CommandHandler:
             try:
                 return getattr(self, 'handle_' + cmd + '_command')(cwd)
             except Exception as e:
-                globals['logger'].log(f'error while executing command: {cwd}, {e}')
+                print(f'error while executing command: {cwd}, {e}')
                 return 'unknown error'
 
         else:
@@ -77,8 +77,8 @@ class CommandHandler:
                 return f.write(pickle.dumps(nodes_obj))
             f.write(json.dumps(nodes_obj))
 
-    def handle_mod_command(self, cwd):
-        """ mod {node_id} {replications} {delay} """
+    def handle_modify_command(self, cwd):
+        """ modify {node_id} {replications} {delay} """
         parts = cwd.split(' ')
         try:
             self.nr.update_config(int(parts[1], 16), parts[2], parts[3])

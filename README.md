@@ -58,9 +58,9 @@ required.
 
 - `load [filename]` load a file with commands to run in the simulator. the default file is `cmds_load.txt`. the file
   should contain a single command per line.
-- `create node_id x_pos y_pos range` creates one or more new nodes
-- `del [node_id]` deletes a node
-- `mod (node_id) (replications) (delay)` changes the config of a node
+- `create (node_id) (x_pos) (y_pos) (range)` creates one or more new nodes
+- `delete (node_id)` deletes a node
+- `modify (node_id) (replications) (delay)` changes the config of a node
 - `save [filename]` saves the nodes info into a file called `tmp/config.json`. if filename ends in .pickle it will save
   it using the pickle format.
 - `print [filename]` store the network topography as an image or open in separate window.

@@ -20,7 +20,9 @@ class TerminalUI:
         if curses.COLS < 103:
             raise Exception("window to small (minimum 103 columns)")
 
-        self.top_message1 = curses.newwin(6, curses.COLS // 2, 0, 0)
+        top_msg1_lines = 7  # TODO:: make line height dynamic
+
+        self.top_message1 = curses.newwin(top_msg1_lines, curses.COLS // 2, 0, 0)
         self.top_message1.addstr(message1)
         self.top_message1.refresh()
 
@@ -28,7 +30,7 @@ class TerminalUI:
         self.top_message2.addstr(message2)
         self.top_message2.refresh()
 
-        self.column1 = curses.newwin(curses.LINES - 7, curses.COLS // 2, 7, 0)
+        self.column1 = curses.newwin(curses.LINES - (top_msg1_lines + 1), curses.COLS // 2, (top_msg1_lines + 1), 0)
         self.column1.scrollok(True)
         self.column1.refresh()
 

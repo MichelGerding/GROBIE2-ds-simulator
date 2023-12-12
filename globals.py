@@ -1,4 +1,4 @@
 globals = {
-    'logger': None,
     'ui': None,
+    'args': None
 }
