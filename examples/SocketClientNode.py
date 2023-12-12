@@ -1,6 +1,6 @@
 from libs.node.ReplicationInfo import ReplicationInfo
 from libs.node.NodeConfig import NodeConfig
-from libs.node.nodes.BaseNode import BaseNode
+from libs.node.nodes.abstracts.BaseNode import BaseNode
 from libs.network.Message import Message
 
 import threading
@@ -86,14 +86,12 @@ class SocketNode(BaseNode):
         if message.sending_id == self.node_id:
             return
 
-        if message.receiving_id == self.node_id:
+        if message.receiving_id == self.node_id or message.receiving_id == 0xFF:
             print(f"Node {self.node_id} received message from {message.sending_id}: {message.payload}")
-
 
         # propogate message
         message.hops += 1
         self.send_message(message.receiving_id, message.payload, message.channel)
-
 
 
 if __name__ == '__main__':

@@ -2,7 +2,7 @@ from libs.network.Message import Message
 
 from abc import ABC, abstractmethod
 
-from libs.node.nodes.BaseNode import BaseNode
+from libs.node.nodes.abstracts.BaseNode import BaseNode
 
 
 class NetworkNode(BaseNode, ABC):

@@ -108,15 +108,15 @@ this node will receive messages from the server as pickled Message classes. thes
 
 the network expects the client to send message of the same class back to the server.
 
-an example socket node can be found in the file `libs/node/nodes/ExampleClientSocketNode.py`. this node will connect to 
-the network and propogate messages on the network. next to that it will print message that are send to it. so it is a 
+an example socket node can be found in the file `examples/SocketClientNode.py`. this node will connect to 
+the network and propagate messages on the network. next to that it will print message that are send to it. so it is a 
 minimal example of how to connect to the network using sockets.
 
 #### advantages
 the biggest advantage of using sockets to connect is that you can use any language you want to connect to the network. 
-next to that it will also make it easier to test your own routing protocol as you can more easely test it in isolation. 
-as it will be on its own process. because it is on a seperate process it will also increase the performance as all normal 
-nodes run on a seperate thread. due to this the simulator will be able to handle more nodes. 
+next to that it will also make it easier to test your own routing protocol as you can more easily test it in isolation. 
+as it will be on its own process. because it is on a separate process it will also increase the performance as all normal 
+nodes run on a separate thread. due to this the simulator will be able to handle more nodes. 
 
 ### file structure
 

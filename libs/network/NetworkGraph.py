@@ -5,7 +5,7 @@ import networkx as nx
 
 import matplotlib
 
-from libs.node.nodes.BaseNode import BaseNode
+from libs.node.nodes.abstracts.BaseNode import BaseNode
 
 
 class NetworkGraph:

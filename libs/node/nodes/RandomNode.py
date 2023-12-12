@@ -1,5 +1,5 @@
 from libs.node.ReplicationInfo import ReplicationInfo
-from libs.node.nodes.NetworkNode import NetworkNode
+from libs.node.nodes.abstracts.NetworkNode import NetworkNode
 from libs.network.Measurement import Measurement
 from libs.RepeatedTimer import RepeatedTimer
 from libs.node.NodeConfig import NodeConfig

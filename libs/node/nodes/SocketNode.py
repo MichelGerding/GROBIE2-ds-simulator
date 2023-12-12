@@ -1,9 +1,8 @@
 import threading
-import time
 import socket
 
 from libs.network.Message import Message
-from libs.node.nodes.BaseNode import BaseNode
+from libs.node.nodes.abstracts.BaseNode import BaseNode
 
 import pickle
 

@@ -4,13 +4,11 @@ import socket
 
 from libs.network.NetworkGraph import NetworkGraph
 from libs.network.Message import Message
-from libs.node.NodeConfig import NodeConfig
-from libs.node.ReplicationInfo import ReplicationInfo
 from globals import globals
 
 import threading
 
-from libs.node.nodes.BaseNode import BaseNode
+from libs.node.nodes.abstracts.BaseNode import BaseNode
 from libs.node.nodes.SocketNode import ServerSocketNode
 
 
