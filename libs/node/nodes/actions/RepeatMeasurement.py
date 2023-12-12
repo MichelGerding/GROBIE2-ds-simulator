@@ -1,27 +1,10 @@
-import math
-from random import random
-from typing import Callable
-
-from libs.RepeatedTimer import RepeatedTimer
 from libs.network.Measurement import Measurement
+from libs.RepeatedTimer import RepeatedTimer
 
-from datetime import datetime, timezone
-from tinyflux import TinyFlux, Point
+from typing import Callable
+from random import random
 
-class StoreData:
-    """ store the data in the given database """
-    def __init__(self, db: TinyFlux, node_id: int):
-        self.db = db
-        self.node_id = node_id
-
-    def __call__(self, measurement: Measurement):
-        # store measurement
-        self.db.insert(Point(
-            time=datetime.now(timezone.utc),
-            tags={"node": hex(self.node_id)},
-            fields={"temp": measurement.temp, "light": measurement.light}
-        ))
-        return measurement
+import math
 
 
 class RepeatMeasurement:

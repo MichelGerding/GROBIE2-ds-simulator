@@ -68,14 +68,14 @@ class CommandHandler:
                         {
                             'node_id': key,
                             'requested_replications': value.requested_replications,
-                            'replicating_nodes': [i for i in value.replicating_nodes]
+                            'replicating_nodes': value.replicating_nodes
                         } for key, value in node.ledger.items()
                     ]
                 })
 
             if filename.endswith('.pickle'):
                 return f.write(pickle.dumps(nodes_obj))
-            f.write(json.dumps(nodes_obj))
+            f.write(json.dumps(nodes_obj, default=lambda o: o.__dict__))
 
     def handle_modify_command(self, cwd):
         """ modify {node_id} {replications} {delay} """

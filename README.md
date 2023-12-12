@@ -133,19 +133,20 @@ more. the file structure is as follows:
 
 
 ## TODO
-the todos are unordered but have a priority assigned to them. for this the moscow method is used. after the priority the
-order is indicated by a number. the higher the number the higher the priority. the todos are as follows:
+the todos are unordered but have a priority assigned to them. for this the moscow method is used.
+the todos are as follows:
 
-- [ ] convert threads to processes to allow for concurrent execution              **_must have_**        1
-- [ ] add support for network issues                                              **_must have_**        3
-  - [ ] add support for message collisions                                        **_must have_**        3.3
-  - [ ] add support for message loss                                              **_must have_**        3.1
-  - [ ] add support for message corruption                                        **_must have_**        3.2
-  - [ ] add support for mesh separation                                           **_must have_**        3.4
-    - [ ] add support for mesh separation due to node failure                     **_must have_**        3.4.1
-    - [ ] add support for mesh separation due to network issues                   **_must have_**        3.4.2
-  - [ ] add support for high interference areas (e.g. near a microwave)           **_nice to have_**     3.6
-    - [ ] add non-uniform transmission range (e.g. ellipse instead of circle)     **_nice to have_**     3.6.1       
-  - [ ] add support for node failure                                              **_should have_**      3.5
-- [ ] test support for merging meshes                                             **_must have_**        2
-- [ ] address todos in code                                                        **_must have_**        4
+- [ ] convert threads to processes to allow for concurrent execution              **_must have_**
+- [ ] add support for network issues                                              **_must have_**
+  - [ ] add support for message collisions                                        **_must have_**
+  - [ ] add support for message loss                                              **_must have_**
+  - [ ] add support for message corruption                                        **_must have_**
+  - [ ] add support for mesh separation                                           **_must have_**
+    - [ ] add support for mesh separation due to node failure                     **_must have_**
+    - [ ] add support for mesh separation due to network issues                   **_must have_**
+  - [ ] add support for high interference areas (e.g. near a microwave)           **_nice to have_**
+    - [ ] add non-uniform transmission range (e.g. ellipse instead of circle)     **_nice to have_**       
+  - [ ] add support for node failure                                              **_should have_**
+- [ ] test support for merging meshes                                             **_must have_**
+- [ ] address todos in code                                                       **_must have_**
+- [ ] config not always correctly shared                                          **_must have_**

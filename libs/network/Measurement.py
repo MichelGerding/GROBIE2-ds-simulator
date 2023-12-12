@@ -15,3 +15,16 @@ class Measurement:
             'temp': self.temp,
             'light': self.light
         }, sort_keys=True)
+
+    @staticmethod
+    def deserialize(data: str):
+        """ deserialize a string to a measurement """
+        data = json.loads(data)
+        return Measurement(
+            temp=data['temp'],
+            light=data['light']
+        )
+
+    def serialize(self):
+        """ serialize a measurement to a string """
+        return str(self)

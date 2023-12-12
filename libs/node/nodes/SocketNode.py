@@ -1,10 +1,8 @@
+from libs.node.nodes.abstracts.BaseNode import BaseNode
+from libs.network.Message import Message
+
 import threading
 import socket
-
-from libs.network.Message import Message
-from libs.node.nodes.abstracts.BaseNode import BaseNode
-
-import pickle
 
 
 class ServerSocketNode(BaseNode):
@@ -24,18 +22,18 @@ class ServerSocketNode(BaseNode):
     def listen(self):
         """ listen for messages send by the remote client to send onto the network """
         while True:
-            data = self.socket.recv(1024)
+            data = self.socket.recv(2048)
             if not data:
                 break
 
-            msg = pickle.loads(data)
+            msg = Message.deserialize(data)
 
             self.received_messages.append(msg.msg_id)
             self.send_message(msg)
 
-    def rec_message(self, message):
+    def rec_message(self, message: Message):
         # send message over socket
-        self.socket.sendall(pickle.dumps(message))
+        self.socket.sendall(message.serialize())
 
     def send_message(self, message: Message):
         """ send a message to the network """

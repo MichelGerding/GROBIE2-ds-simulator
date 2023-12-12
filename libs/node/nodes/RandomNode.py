@@ -1,63 +1,59 @@
-from libs.node.ReplicationInfo import ReplicationInfo
+from libs.node.nodes.controllers.ReplicationController import ReplicationController
+from libs.node.nodes.controllers.StorageController import StorageController
+from libs.node.nodes.controllers.ConfigController import ConfigController
+from libs.node.nodes.actions.RepeatMeasurement import RepeatMeasurement
 from libs.node.nodes.abstracts.NetworkNode import NetworkNode
+from libs.network.networks.Network import Network
 from libs.network.Measurement import Measurement
 from libs.RepeatedTimer import RepeatedTimer
 from libs.node.NodeConfig import NodeConfig
 from libs.network.Channel import ChannelID
 from libs.network.Message import Message
-from libs.network.networks.Network import Network
-
-from datetime import datetime, timezone
-from tinyflux import TinyFlux, Point
-from threading import Timer
-from globals import globals
-from random import random, randint
-
-import math
-import json
-import os
-
-from libs.node.nodes.actions.RepeatMeasurement import RepeatMeasurement, StoreData
 
 
 class RandomNode(NetworkNode):
     """ This is a node that sends random measurements to the network.
         The rate of measurements can be adjusted by updating the config. """
-    repeated_timer: RepeatedTimer
 
-    ledger: dict[int, NodeConfig]
-    replication_bids: dict[int, int]
+    replication_bidding_controller: ReplicationController
+    storage_controller: StorageController
+    config_controller: ConfigController
+    repeated_timer: RepeatedTimer
 
     def __init__(self, network: Network, node_id: int, config: NodeConfig, x: int, y: int, r: int):
         super().__init__(network, node_id, x, y, r)
 
-        self.ledger = {}
+        # create the controllers. the controllers will handle generic logic like replications, configuration,
+        # storage, ...
+        # this is done so that it is easier to change the logic but also add new types of nodes as the logic is
+        # seperated from the node itself.
+        self.config_controller = ConfigController(
+            node_id,
+            config,
+            lambda message: self.send_message(0xFF, message, ChannelID.CONFIG.value)
+        )
 
-        self.replication_bidding_timer = None
-        self.replication_bids = {}
+        self.replication_bidding_controller = ReplicationController(
+            self.config_controller['replication_timeout'],
+            self.config_controller['requested_replications'],
+            lambda: self.config_controller.get_current_replicators(self.node_id),
+            lambda winners: self.config_controller.change_config('replicating_nodes', winners)
+        )
 
-        self.config = config
+        self.storage_controller = StorageController(node_id)
 
-        # send discovery message
-        self.send_message(0xFF, str(self.config), 0x02)
-
-        # generate a random file path. this is where the database will be stored.
-        # the database used for testing will make use of a csv file for easy reading.
-        self.path = f'./tmp/databases/{datetime.now(timezone.utc).timestamp()}_{math.floor(random() * 92121)}_{node_id}.csv'
-        os.makedirs(os.path.dirname(self.path), exist_ok=True)
-        self.db = TinyFlux(self.path)
-
-        # start making measurements periodically.
-        # also store the measurements locally and send them to the network
+        # create the repeated measurement
         self.repeated_measurement = RepeatMeasurement(
-            self.config.measurement_interval,
+            self.config_controller['measurement_interval'],
             [
-                StoreData(self.db, self.node_id),  # store measurement locally
-                lambda m: self.send_message(0xFF, str(m), 0x01)  # send measurement to network
+                lambda m: self.storage_controller(m, self.node_id),  # store measurement locally
+                lambda m: self.send_message(0xFF, m.serialize(), 0x01)  # send measurement to network
             ]
         )
 
-        self.repeated_measurement.start()
+        # start the node
+        self.repeated_measurement.start()  # start making measurements
+        self.send_message(0xFF, self.config.serialize(), ChannelID.DISCOVERY.value)  # broadcast config
 
     def handle_message(self, message: Message):
         """ handle messages that get send to this node.
@@ -66,54 +62,22 @@ class RandomNode(NetworkNode):
             return
 
         if message.channel == ChannelID.CONFIG.value:
-            self.handle_config_message(message)
+            self.config_controller.handle_message(message)
         elif message.channel == ChannelID.MEASUREMENT.value:
             self.handle_measurement_message(message)
         elif message.channel == ChannelID.DISCOVERY.value:
             self.handle_discovery_message(message)
         elif message.channel == ChannelID.REPLICATION_BIDDING.value:
-            self.handle_replication_bid_message(message)
+            if message.receiving_id != self.node_id or \
+                    len(self.config_controller['replicating_nodes']) >= self.config.requested_replications:
+                return
+
+            self.replication_bidding_controller.add_bid(message.sending_id, int(message.payload))
 
     def handle_discovery_message(self, message: Message):
         """ if we get a discovery request we will broadcast our config. we will broadcast instead of uni-cast so
             that all nodes can update their ledger as one or more nodes don't have our config"""
-        self.send_message(message.sending_id, str(self.config), 0x00)
-
-    def handle_config_message(self, message: Message):
-        """ if we get a message on the config channel we will update the ledger with this config.
-            if the message is for us, we will also update our config """
-
-        config = NodeConfig(**json.loads(message.payload))
-        self.ledger[message.sending_id] = config
-
-        if message.receiving_id == self.node_id:
-            self.change_config('measurement_interval', str(config.measurement_interval))
-            self.change_config('requested_replications', str(config.requested_replications))
-
-    def handle_replication_bid_message(self, message: Message):
-        """ to add new replications we will use a bidding system. the node that wants to replicate will send a bid
-            being the amount of hops he is from the node that send the measurement. the node that send the measurement
-            will then pick n random nodes that have bid and send them a message that they should replicate the node.
-            after this the config of the node that send the measurement will be updated so all nodes know which nodes
-            are replicating """
-
-        # if the bid is not for us we will ignore it
-        if message.receiving_id != self.node_id:
-            return
-
-        # if we are already replicating this node we will ignore the bid
-        if message.sending_id in [i.node_id for i in self.config.replicating_nodes]:
-            return
-
-        # if there is no timer running we will start one
-        if self.replication_bidding_timer is None or not self.replication_bidding_timer.is_alive():
-            self.replication_bidding_timer = Timer(1, self.decide_replication_winner)
-            self.replication_bidding_timer.start()
-
-        # add the bid to the list of bids
-        self.replication_bids[message.sending_id] = int(message.payload)
-
-        # globals['logger'].print(f'{self.node_id}, {self.replication_bids}')
+        self.send_message(message.sending_id, self.config.serialize(), ChannelID.CONFIG.value)
 
     def handle_measurement_message(self, message: Message):
         """ handle messages that contain measurements we will only store the measurements if we know the node that
@@ -131,16 +95,14 @@ class RandomNode(NetworkNode):
             # check how many nodes where replicating
             return self.send_message(message.sending_id, '', ChannelID.DISCOVERY.value)
 
-        # TODO:: investigate why this is a dict
+        # get the node that send the message config
+        cnf = self.config_controller.get_nodes_config(message.sending_id)
+
         # at this point we know who the node is and we have its config
-        if self.node_id in [int(i['node_id'], 16) for i in self.ledger[message.sending_id].replicating_nodes]:
-            # if we are already replicating this node we will store the measurement
-            m = Measurement(**json.loads(message.payload))
-            self.db.insert(Point(
-                time=datetime.now(timezone.utc),
-                tags={"node": hex(message.sending_id)},
-                fields={"temp": m.temp, "light": m.light}
-            ))
+        if self.node_id in cnf.replicating_nodes:
+            # if we will parse and store the measurement
+            m = Measurement.deserialize(message.payload)
+            self.storage_controller(m, message.sending_id)
 
         else:
             # if we aren't in the ledger we will check if it has enough replicating nodes
@@ -148,61 +110,22 @@ class RandomNode(NetworkNode):
             if self.node_id == message.sending_id:
                 return
 
-            cnf = self.ledger[message.sending_id]
             if len(cnf.replicating_nodes) < cnf.requested_replications:
                 # send replication bidding message
                 self.send_message(message.sending_id, str(message.hops), ChannelID.REPLICATION_BIDDING.value)
-
-    def decide_replication_winner(self):
-        """ Decide the winners of the replication bidding and update the config to reflect this. """
-        # check how many winners there will be
-        winner_count = self.config.requested_replications - len(self.config.replicating_nodes)
-
-        # get n random unique nodes that have bid
-        nodes = list(self.replication_bids.keys())
-        if len(nodes) == 0:
-            globals['ui'].add_text_to_column2('no nodes have bid')
-            return
-
-        # the current algorithm will sort the nodes by the amount of hops. next it will split the list into n segments
-        # where n is the amount of winners we need. then it will pick a random node from each segment. this will
-        # ensure that we have nodes that are at least a different amount of hops away from us.
-        # TODO:: implement better algorithm to choose winners.
-        sorted_bids = sorted(self.replication_bids.items(), key=lambda x: x[1])
-
-        segment_size = len(sorted_bids) // winner_count
-        if segment_size == 0:
-            # take all bids
-            segment_size = 1
-
-        for i in range(min(winner_count, math.ceil(len(sorted_bids) / segment_size))):
-            index = randint(i * segment_size, (i + 1) * segment_size - 1)
-
-            node = sorted_bids[index][0]
-            if node not in self.config.replicating_nodes:
-                # append the node and the amount of hops it is away from the node that send the measurement
-                self.config.replicating_nodes.append(ReplicationInfo(node, sorted_bids[index][1]))
-
-        # clear the list of bids
-        self.replication_bids = {}
-        self.send_config_update()
-
-    def send_config_update(self):
-        """ send the config to the network"""
-        self.send_message(0xFF, str(self.config), ChannelID.CONFIG.value)
 
     def shutdown(self):
         """ Stop sending measurements to the network. """
         self.repeated_measurement.stop()
 
-    def change_config(self, key: str, value: str):
+    def change_config(self, key: str, value):
         """ Change the config of the node. """
-        # depending on which value needs to be changed we will convert the value to a different type
+        self.config_controller.change_config(key, value)
 
-        # TODO:: Fix this
-        # if key == 'measurement_interval':
-        #     self..change_interval(float(value))
-        #     self.config.measurement_interval = float(value)
+    @property
+    def config(self):
+        return self.config_controller.config
 
-        if key == 'requested_replications':
-            self.config.requested_replications = int(value)
+    @property
+    def ledger(self):
+        return self.config_controller.ledger

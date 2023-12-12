@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-
+import pickle
 
 @dataclass
 class Message:
@@ -13,3 +13,12 @@ class Message:
     # routing info
     msg_id: bytes
     hops: int = 0
+
+    def serialize(self):
+        """ serialize a measurement to a string """
+        return pickle.dumps(self)
+
+    @staticmethod
+    def deserialize(data: bytes):
+        """ deserialize a string to a measurement """
+        return pickle.loads(data)
