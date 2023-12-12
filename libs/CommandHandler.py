@@ -53,7 +53,7 @@ class CommandHandler:
                     'config': {
                         'measurement_interval': node.config.measurement_interval,
                         'requested_replications': node.config.requested_replications,
-                        'replicating_nodes': [i.node_id for i in node.config.replicating_nodes]
+                        'replicating_nodes': [i.node_id for i in node.config.replicating_nodes],
                     },
                     'ledger': [
                         {

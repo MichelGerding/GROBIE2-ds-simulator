@@ -2,6 +2,8 @@ from libs.node.ReplicationInfo import ReplicationInfo
 
 from dataclasses import dataclass
 
+from copy import deepcopy
+
 import json
 
 
@@ -19,6 +21,7 @@ class NodeConfig:
     requested_replications: int
     measurement_interval: float
     replicating_nodes: list[ReplicationInfo] # TODO: investigate why this is list[dict] instead of list[ReplicationInfo]
+    max_replications: int = 4
 
     def __str__(self):
 
@@ -31,3 +34,6 @@ class NodeConfig:
             'measurement_interval': self.measurement_interval,
             'replicating_nodes': replicating_nodes_json
         }, sort_keys=True)
+
+    def copy(self):
+        return deepcopy(self)

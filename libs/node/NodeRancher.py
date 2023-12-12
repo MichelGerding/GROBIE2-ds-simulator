@@ -1,7 +1,8 @@
+from libs.node.ReplicationInfo import ReplicationInfo
+from libs.network.networks.Network import Network
 from libs.node.nodes.RandomNode import RandomNode
 from libs.node.NodeConfig import NodeConfig
-from libs.network.Message import Message
-from libs.network.Network import Network
+
 
 class NodeRancher:
     """ Node rancher. control and configure the nodes. """
@@ -13,14 +14,12 @@ class NodeRancher:
 
     def create_node(self, node_id, x, y, r):
         """ Create a new node with default config. if node with id exists it will be replaced """
-        config = NodeConfig(10, 5, [])
+        config = NodeConfig(4, 2, [ReplicationInfo(node_id, 0)])
         n = RandomNode(self.network, node_id, config, x, y, r)
 
         if node_id in self.nodes:
-            self.nodes[node_id].stop_measurements()
-
+            self.nodes[node_id].shutdown()
         self.nodes[node_id] = n
-        n.start_measurements()
 
     def delete_node(self, node_id):
         """ Delete a node """
@@ -29,18 +28,10 @@ class NodeRancher:
     def stop_node(self, node_id=None):
         """ Stop a node. if no node_id is provided we will stop all nodes """
         if node_id:
-            return self.nodes[node_id].stop_measurements()
+            return self.nodes[node_id].shutdown()
 
         for n in self.nodes.values():
-            n.stop_measurements()
-
-    def start_node(self, node_id=None):
-        """ Start a node. if no node_id is provided all nodes will be stopped """
-        if node_id:
-            return self.nodes[node_id].start_measurements()
-
-        for n in self.nodes.values():
-            n.start_measurements()
+            n.shutdown()
 
     def update_config(self, node_id: int, reps: str, delay: str):
         """ Send message to update nodes config.

@@ -6,6 +6,7 @@ import networkx as nx
 
 import matplotlib
 
+from libs.node.nodes.BaseNode import BaseNode
 
 
 class NetworkGraph:
@@ -16,14 +17,14 @@ class NetworkGraph:
     def __init__(self):
         self.graph = nx.DiGraph()
 
-    def add_node(self, node: NetworkNode):
+    def add_node(self, node: BaseNode):
         """ add a node to the graph. this will also recompute the neighbours of the nodes."""
         self.graph.add_node(node)
         # get all nodes that are within range of the new node
         for n in self.graph.nodes:
             self.update_neighbours(n)
 
-    def update_neighbours(self, node: NetworkNode):
+    def update_neighbours(self, node: BaseNode):
         """ update the neighbours of the node """
         # get all nodes that are within range of the new node
         nodes = list(self.graph.nodes)  # Create a copy of the nodes
@@ -33,11 +34,11 @@ class NetworkGraph:
             if n.distance(node) <= n.r and n != node:
                 self.graph.add_edge(n, node, weight=n.distance(node))
 
-    def remove_node(self, node: NetworkNode):
+    def remove_node(self, node: BaseNode):
         """ remove a node from the graph."""
         self.graph.remove_node(node.node_id)
 
-    def get_neighbours(self, node: NetworkNode):
+    def get_neighbours(self, node: BaseNode):
         """ get all neighbours of the node """
         return list(self.graph.neighbors(node))
 

@@ -5,17 +5,19 @@ from libs.RepeatedTimer import RepeatedTimer
 from libs.node.NodeConfig import NodeConfig
 from libs.network.Channel import ChannelID
 from libs.network.Message import Message
-from libs.network.Network import Network
+from libs.network.networks.Network import Network
 
 from datetime import datetime, timezone
 from tinyflux import TinyFlux, Point
 from threading import Timer
 from globals import globals
-from random import random
+from random import random, randint
 
 import math
 import json
 import os
+
+from libs.node.nodes.actions.RepeatMeasurement import RepeatMeasurement, StoreData
 
 
 class RandomNode(NetworkNode):
@@ -23,13 +25,17 @@ class RandomNode(NetworkNode):
         The rate of measurements can be adjusted by updating the config. """
     repeated_timer: RepeatedTimer
 
-    ledger: dict[int, NodeConfig] = {}
-    replication_bids: dict[int, int] = {}
+    ledger: dict[int, NodeConfig]
+    replication_bids: dict[int, int]
 
     def __init__(self, network: Network, node_id: int, config: NodeConfig, x: int, y: int, r: int):
-        super().__init__(network, node_id, config, x, y, r)
+        super().__init__(network, node_id, x, y, r)
+
+        self.ledger = {}
+
         self.replication_bidding_timer = None
-        self.repeated_timer = RepeatedTimer(config.measurement_interval, self.measure)
+        self.replication_bids = {}
+
         self.config = config
 
         # send discovery message
@@ -37,34 +43,27 @@ class RandomNode(NetworkNode):
 
         # generate a random file path. this is where the database will be stored.
         # the database used for testing will make use of a csv file for easy reading.
-        # the database used for the final product will use a sqlite database.
         self.path = f'./tmp/databases/{datetime.now(timezone.utc).timestamp()}_{math.floor(random() * 92121)}_{node_id}.csv'
-
-        # make sure the directory exists
         os.makedirs(os.path.dirname(self.path), exist_ok=True)
-
-        # TODO:: change to sqlite for improved capacity
         self.db = TinyFlux(self.path)
 
-    def measure(self):
-        """ measure the temperature and light and send it to the network.
-            This function will also store the measurement in the database. """
-        temp = random() * 5 + 17.5
-        light = math.floor(random() * 1000)
-
-        m = Measurement(temp, light)
-        p = Point(
-            time=datetime.now(timezone.utc),
-            tags={"node": hex(self.node_id)},
-            fields={"temp": m.temp, "light": m.light}
+        # start making measurements periodically.
+        # also store the measurements locally and send them to the network
+        self.repeated_measurement = RepeatMeasurement(
+            self.config.measurement_interval,
+            [
+                StoreData(self.db, self.node_id),  # store measurement locally
+                lambda m: self.send_message(0xFF, str(m), 0x01)  # send measurement to network
+            ]
         )
 
-        self.db.insert(p)
-        self.send_message(0xFF, str(m), 0x01)
+        self.repeated_measurement.start()
 
     def handle_message(self, message: Message):
         """ handle messages that get send to this node.
             This function will only receive messages that are for this node. """
+        if self.node_id == message.sending_id:
+            return
 
         if message.channel == ChannelID.CONFIG.value:
             self.handle_config_message(message)
@@ -101,15 +100,20 @@ class RandomNode(NetworkNode):
         # if the bid is not for us we will ignore it
         if message.receiving_id != self.node_id:
             return
+
+        # if we are already replicating this node we will ignore the bid
+        if message.sending_id in [i.node_id for i in self.config.replicating_nodes]:
+            return
+
         # if there is no timer running we will start one
         if self.replication_bidding_timer is None or not self.replication_bidding_timer.is_alive():
-            self.replication_bidding_timer = Timer(1, self.handle_replication_bidding)
+            self.replication_bidding_timer = Timer(1, self.decide_replication_winner)
             self.replication_bidding_timer.start()
 
         # add the bid to the list of bids
         self.replication_bids[message.sending_id] = int(message.payload)
 
-        globals['logger'].print(f'{self.node_id}, {self.replication_bids}')
+        # globals['logger'].print(f'{self.node_id}, {self.replication_bids}')
 
     def handle_measurement_message(self, message: Message):
         """ handle messages that contain measurements we will only store the measurements if we know the node that
@@ -123,8 +127,11 @@ class RandomNode(NetworkNode):
             # if the node isn't in the ledger we will send a discovery message to the node.
             # this will prompt the node to send its config onto the network.
             # this message doesn't contain a message as it is not needed
+
+            # check how many nodes where replicating
             return self.send_message(message.sending_id, '', ChannelID.DISCOVERY.value)
 
+        # TODO:: investigate why this is a dict
         # at this point we know who the node is and we have its config
         if self.node_id in [int(i['node_id'], 16) for i in self.ledger[message.sending_id].replicating_nodes]:
             # if we are already replicating this node we will store the measurement
@@ -138,13 +145,15 @@ class RandomNode(NetworkNode):
         else:
             # if we aren't in the ledger we will check if it has enough replicating nodes
             # if it hasn't we will send a replication bidding message
+            if self.node_id == message.sending_id:
+                return
 
             cnf = self.ledger[message.sending_id]
             if len(cnf.replicating_nodes) < cnf.requested_replications:
                 # send replication bidding message
-                self.send_message(message.sending_id, str("1"), ChannelID.REPLICATION_BIDDING.value)
+                self.send_message(message.sending_id, str(message.hops), ChannelID.REPLICATION_BIDDING.value)
 
-    def handle_replication_bidding(self):
+    def decide_replication_winner(self):
         """ Decide the winners of the replication bidding and update the config to reflect this. """
         # check how many winners there will be
         winner_count = self.config.requested_replications - len(self.config.replicating_nodes)
@@ -155,34 +164,42 @@ class RandomNode(NetworkNode):
             globals['ui'].add_text_to_column2('no nodes have bid')
             return
 
-        random_nodes = []
-        for i in range(winner_count):
-            if len(nodes) == 0:
-                break
+        # the current algorithm will sort the nodes by the amount of hops. next it will split the list into n segments
+        # where n is the amount of winners we need. then it will pick a random node from each segment. this will
+        # ensure that we have nodes that are at least a different amount of hops away from us.
+        # TODO:: implement better algorithm to choose winners.
+        sorted_bids = sorted(self.replication_bids.items(), key=lambda x: x[1])
 
-            random_nodes.append(nodes.pop(math.floor(random() * len(nodes))))
+        segment_size = len(sorted_bids) // winner_count
+        if segment_size == 0:
+            # take all bids
+            segment_size = 1
 
-        # update the config and send it to the network
-        self.config.replicating_nodes = [ReplicationInfo(i, 1) for i in random_nodes]
+        for i in range(min(winner_count, math.ceil(len(sorted_bids) / segment_size))):
+            index = randint(i * segment_size, (i + 1) * segment_size - 1)
+
+            node = sorted_bids[index][0]
+            if node not in self.config.replicating_nodes:
+                # append the node and the amount of hops it is away from the node that send the measurement
+                self.config.replicating_nodes.append(ReplicationInfo(node, sorted_bids[index][1]))
+
+        # clear the list of bids
+        self.replication_bids = {}
+        self.send_config_update()
+
+    def send_config_update(self):
+        """ send the config to the network"""
         self.send_message(0xFF, str(self.config), ChannelID.CONFIG.value)
 
-    def start_measurements(self):
-        """ Start sending measurements to the network. """
-        self.repeated_timer.start()
-
-    def stop_measurements(self):
+    def shutdown(self):
         """ Stop sending measurements to the network. """
-        self.repeated_timer.stop()
+        self.repeated_measurement.stop()
 
     def change_config(self, key: str, value: str):
         """ Change the config of the node. """
         # depending on which value needs to be changed we will convert the value to a different type
         if key == 'measurement_interval':
-            # if we want to change the interval of the measurements we will need to create a new
-            # RepeatedTimer as we can't adjust the interval of the current one
-            self.repeated_timer.stop()
-            self.repeated_timer = RepeatedTimer(float(value), self.measure)
-            self.repeated_timer.start()
+            self.repeated_measurement.change_interval(float(value))
             self.config.measurement_interval = float(value)
 
         if key == 'requested_replications':

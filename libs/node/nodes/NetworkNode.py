@@ -2,32 +2,37 @@ from libs.network.Message import Message
 
 from abc import ABC, abstractmethod
 
-class NetworkNode(ABC):
+from libs.node.nodes.BaseNode import BaseNode
 
-    received_messages: list[str]
+
+class NetworkNode(BaseNode, ABC):
+
+    received_messages: list[bytes]
     messages_send_counter: int
 
-    def __init__(self, network, node_id, config, x, y, r):
+    def __init__(self, network, node_id, x, y, r):
+        super().__init__(node_id, x, y, r)
+
         self.network = network
         self.node_id = node_id
-        self.config = config
 
         self.x = x
         self.y = y
         self.r = r
 
-        network.join_network(self)
-
         self.received_messages = []
         self.messages_send_counter = 0
 
-    def distance(self, node):
-        return ((self.x - node.x) ** 2 + (self.y - node.y) ** 2) ** 0.5
+        network.join_network(self)
 
     def rec_message(self, message: Message):
         """ handle messages that are received """
-        # if we have already received this message or it is our own we can ignore it
-        if message.msg_id in self.received_messages or message.sending_id == self.node_id:
+        # if the message was our own message, ignore it
+        if message.sending_id == self.node_id:
+            return
+
+        # check if we already received the message
+        if message.msg_id in self.received_messages:
             return
 
         self.received_messages.append(message.msg_id)
