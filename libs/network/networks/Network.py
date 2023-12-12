@@ -17,16 +17,14 @@ from libs.node.nodes.ServerSocketNode import ServerSocketNode
 class Network:
     network_log_file = 'tmp/network_log.txt'
 
-    address_map = {}
-
-    def __init__(self):
+    def __init__(self, port=9174):
         self.graph = NetworkGraph()
         os.makedirs(os.path.dirname(self.network_log_file), exist_ok=True)
         self.file = open(self.network_log_file, 'w')
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-        self.socket_thread = threading.Thread(target=self.start, args=('0.0.0.0', 8080))
+        self.socket_thread = threading.Thread(target=self.start, args=('0.0.0.0', port))
         self.socket_thread.daemon = True
         self.socket_thread.start()
 
@@ -53,7 +51,6 @@ class Network:
         y = data['y']
         r = data['r']
 
-        self.address_map[node_id] = client_socket
         globals['ui'].add_text_to_column2(f'node {node_id}, {x}, {y}, {r} connected\n')
 
         # create a new node
@@ -62,7 +59,7 @@ class Network:
 
     def send_message(self, message: Message, node: BaseNode):
         """ send a message to the neighbours of the node """
-        globals['ui'].add_text_to_column2(f'sending message to node {message.receiving_id} on channel {message.channel} from {message.sending_id} with {message.hops} hops]\n')
+        globals['ui'].add_text_to_column2(f'sending message to node {message.receiving_id} on channel {message.channel} from {message.sending_id} with {message.hops} hops\n')
         # log into file
         mess_dict = {
             'sending_id': message.sending_id,

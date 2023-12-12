@@ -1,14 +1,16 @@
-import threading
-import time
-import socket
-
-from libs.network.Message import Message
+from libs.node.ReplicationInfo import ReplicationInfo
+from libs.node.NodeConfig import NodeConfig
 from libs.node.nodes.BaseNode import BaseNode
+from libs.network.Message import Message
 
+import threading
 import pickle
+import socket
+import time
+
 
 class SocketNode(BaseNode):
-    def __init__(self, network: tuple[str, int], node_id, config, x, y, r):
+    def __init__(self, network: tuple[str, int], node_id, x, y, r):
         super().__init__(node_id, x, y, r)
         self.received_messages = []
         self.messages_send_counter = 0
@@ -21,7 +23,6 @@ class SocketNode(BaseNode):
         self.listen_thread = threading.Thread(target=self.listen)
         self.listen_thread.daemon = True
         self.listen_thread.start()
-
 
     def connect(self, host, port):
         """ connect to a socket """
@@ -82,5 +83,24 @@ class SocketNode(BaseNode):
         time.sleep(0.01)
 
     def rec_message(self, message):
-        print(f"Node {self.node_id} received message from {message.sending_id}: {message.payload}")
+        if message.sending_id == self.node_id:
+            return
 
+        if message.receiving_id == self.node_id:
+            print(f"Node {self.node_id} received message from {message.sending_id}: {message.payload}")
+
+
+        # propogate message
+        message.hops += 1
+        self.send_message(message.receiving_id, message.payload, message.channel)
+
+
+
+if __name__ == '__main__':
+    node_id = 0x84
+
+    cnf = NodeConfig(5, 2, [ReplicationInfo(node_id, 0)])
+    node = SocketNode(('localhost', 8080), node_id, 0, 0, 5)
+
+    while True:
+        time.sleep(1)

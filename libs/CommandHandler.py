@@ -18,7 +18,6 @@ class CommandHandler:
         self.file = open(self.filename, 'w')
 
     def handle(self, cwd: str):
-
         if cwd == '':
             return
 
@@ -29,8 +28,12 @@ class CommandHandler:
             # log the command in a file
             self.file.write(cwd + '\n')
             self.file.flush()
+            try:
+                return getattr(self, 'handle_' + cmd + '_command')(cwd)
+            except Exception as e:
+                globals['logger'].log(f'error while executing command: {cwd}, {e}')
+                return 'unknown error'
 
-            return getattr(self, 'handle_' + cmd + '_command')(cwd)
         else:
             return 'unknown command: ' + cwd
 
@@ -44,12 +47,18 @@ class CommandHandler:
         if len(cwd.split(' ')) > 1:
             filename = cwd.split(' ')[1]
 
-        with open(filename, 'w') as f:
-            # write the json to the file
+        mode = 'w'
+        if filename.endswith('.pickle'):
+            mode = 'wb'
+
+        with open(filename, mode) as f:
             nodes_obj = []
             for node in self.nr.nodes.values():
                 nodes_obj.append({
                     'node_id': node.node_id,
+                    'x': node.x,
+                    'y': node.y,
+                    'r': node.r,
                     'config': {
                         'measurement_interval': node.config.measurement_interval,
                         'requested_replications': node.config.requested_replications,
@@ -64,19 +73,28 @@ class CommandHandler:
                     ]
                 })
 
+            if filename.endswith('.pickle'):
+                return f.write(pickle.dumps(nodes_obj))
             f.write(json.dumps(nodes_obj))
 
     def handle_mod_command(self, cwd):
         """ mod {node_id} {replications} {delay} """
         parts = cwd.split(' ')
-        self.nr.update_config(int(parts[1], 16), parts[2], parts[3])
+        try:
+            self.nr.update_config(int(parts[1], 16), parts[2], parts[3])
+        except IndexError:
+            return 'invalid amount of arguments. 3 arguments are required'
         return f'modified node {parts[1]}'
 
     def handle_delete_command(self, cwd):
         """ delete a node with the given id
             cmd: `delete {node_id}` """
         parts = cwd.split(' ')
-        node_id = int(parts[1], 16)
+        try:
+            node_id = int(parts[1], 16)
+        except IndexError:
+            return 'invalid amount of arguments. 1 argument is required'
+
         self.nr.delete_node(node_id)
         return f'deleted node {node_id}'
 
@@ -84,10 +102,13 @@ class CommandHandler:
         """ create a new node with the given id, position and range.
             cmd: `create {node_id} {x} {y} {range}` """
         parts = cwd.split(' ')
-        node_id = int(parts[1], 16)
-        x = int(parts[2])
-        y = int(parts[3])
-        r = int(parts[4])
+        try:
+            node_id = int(parts[1], 16)
+            x = int(parts[2])
+            y = int(parts[3])
+            r = int(parts[4])
+        except IndexError:
+            return 'invalid amount of arguments'
 
         self.nr.create_node(node_id, x, y, r)
         return f'created node {node_id}'
@@ -121,30 +142,3 @@ class CommandHandler:
             cmd: `exit` """
         self.nr.stop_node()
         exit()
-
-    def handle_pickle_command(self, cwd):
-        """ pickle the network
-            cmd: `pickler` """
-        # convert the nodes config to a dict
-        nodes = [{
-            'node_id': node.node_id,
-            'config': {
-                'measurement_interval': node.config.measurement_interval,
-                'requested_replications': node.config.requested_replications,
-                'replicating_nodes': [i.node_id for i in node.config.replicating_nodes]
-            },
-            'ledger': [
-                {
-                    'node_id': key,
-                    'requested_replications': value.requested_replications,
-                    'replicating_nodes': [i for i in value.replicating_nodes]
-                } for key, value in node.ledger.items()
-            ]
-        } for node in self.nr.nodes.values()]
-
-        # pickle the network
-        with open('tmp/pickled_network.pkl', 'wb') as f:
-            f.write(pickle.dumps(nodes))
-
-        return 'pickled network'
-

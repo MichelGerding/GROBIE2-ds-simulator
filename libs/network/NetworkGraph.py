@@ -1,4 +1,3 @@
-from libs.node.nodes.NetworkNode import NetworkNode
 
 from matplotlib import pyplot as plt
 
@@ -71,6 +70,7 @@ class NetworkGraph:
 
         # Set the title and make the layout tight
         ax.set_title("Network topology")
+        ax.axis('equal')
         fig.tight_layout()
 
         # Save the figure to a file or show it

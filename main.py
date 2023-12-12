@@ -1,3 +1,5 @@
+import argparse
+
 from libs.network.networks.Network import Network
 from libs.node.NodeRancher import NodeRancher
 from libs.CommandHandler import CommandHandler
@@ -25,10 +27,14 @@ def start_ui():
 
 
 def main():
-    # init
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--port', type=int, default=9174)
+    args = parser.parse_args()
+
+    # initialization
     globals['logger'] = Logger('tmp/log.txt')
 
-    network = Network()
+    network = Network(args.port)
     nw = NodeRancher(network)
     chd = CommandHandler(nw)
 

@@ -198,9 +198,11 @@ class RandomNode(NetworkNode):
     def change_config(self, key: str, value: str):
         """ Change the config of the node. """
         # depending on which value needs to be changed we will convert the value to a different type
-        if key == 'measurement_interval':
-            self.repeated_measurement.change_interval(float(value))
-            self.config.measurement_interval = float(value)
+
+        # TODO:: Fix this
+        # if key == 'measurement_interval':
+        #     self..change_interval(float(value))
+        #     self.config.measurement_interval = float(value)
 
         if key == 'requested_replications':
             self.config.requested_replications = int(value)
