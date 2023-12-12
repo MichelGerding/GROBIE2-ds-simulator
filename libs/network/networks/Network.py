@@ -11,7 +11,7 @@ from globals import globals
 import threading
 
 from libs.node.nodes.BaseNode import BaseNode
-from libs.node.nodes.ServerSocketNode import ServerSocketNode
+from libs.node.nodes.SocketNode import ServerSocketNode
 
 
 class Network:
