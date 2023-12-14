@@ -11,3 +11,4 @@ class ChannelID(Enum):
     MEASUREMENT = 0x01
     DISCOVERY = 0x02
     REPLICATION_BIDDING = 0x03
+    DISCONNECT = 0x04

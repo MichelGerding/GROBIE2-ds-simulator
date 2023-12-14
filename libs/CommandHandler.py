@@ -1,5 +1,4 @@
 from libs.node.NodeRancher import NodeRancher
-from globals import globals
 
 import pickle
 import json
@@ -135,6 +134,10 @@ class CommandHandler:
 
         with open(filename, 'r') as f:
             for line in f.readlines():
+                if line.startswith('delay'):
+                    time.sleep(int(line.split(' ')[1]))
+                    continue
+
                 self.handle(line.strip())
 
     def handle_exit_command(self, cwd):

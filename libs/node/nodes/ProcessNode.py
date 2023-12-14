@@ -1,3 +1,5 @@
+
+from libs.network.Measurement import Measurement
 from libs.node.nodes.controllers.ReplicationController import ReplicationController
 from libs.node.nodes.controllers.StorageController import StorageController
 from libs.node.nodes.controllers.ConfigController import ConfigController
@@ -9,9 +11,10 @@ from libs.network.Channel import ChannelID
 from libs.node.NodeConfig import NodeConfig
 from libs.network.Message import Message
 
+import multiprocessing.connection as connection
+
 import threading
 import pickle
-import socket
 import time
 
 
@@ -24,7 +27,7 @@ class ProcessNode(BaseNode):
     config_controller: ConfigController
     repeated_timer: RepeatedTimer
 
-    socket: socket.socket
+    connection: connection.Connection
 
     def __init__(self, network: tuple[str, int], node_id, config, x, y, r):
         super().__init__(node_id, x, y, r)
@@ -33,7 +36,7 @@ class ProcessNode(BaseNode):
         self.messages_send_counter = 0
 
         # set up and connect the socket
-        self.socket = self.connect(network[0], network[1])
+        self.connection = self.connect(network[0], network[1])
 
         # start listening to incoming messages
         self.listen_thread = threading.Thread(target=self.listen)
@@ -47,8 +50,6 @@ class ProcessNode(BaseNode):
             config,
             lambda message: self.send_message(0xFF, message, ChannelID.CONFIG.value)
         )
-
-
 
         self.replication_controller = ReplicationController(
             self.config_controller['replication_timeout'],
@@ -64,7 +65,7 @@ class ProcessNode(BaseNode):
             self.config_controller['measurement_interval'],
             [
                 lambda m: self.storage_controller(m, self.node_id),  # store measurement locally
-                lambda m: self.send_message(0xFF, m.serialize(), 0x01)  # send measurement to network
+                lambda m: self.send_message(0xFF, m.serialize(), ChannelID.MEASUREMENT.value)  # send measurement to network
             ]
         )
 
@@ -74,32 +75,27 @@ class ProcessNode(BaseNode):
 
     def connect(self, host, port):
         """ connect to a socket and send the node info """
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect((host, port))
-        info = {
+        s = connection.Client((host, port))
+        s.send({
             'node_id': self.node_id,
             'x': self.x,
             'y': self.y,
             'r': self.r
-        }
+        })
 
-        s.sendall(pickle.dumps(info))
         return s
 
     def disconnect(self):
         """ disconnect from the socket """
-        self.socket.close()
+        self.send_message(0xFF, '', ChannelID.DISCONNECT.value)
+        self.connection.close()
+
 
     def listen(self):
         """ listen for messages """
-
         while True:
-            data = self.socket.recv(2048)
-            if not data:
-                return
-
-            print(data)
-            msg = pickle.loads(data)
+            b = self.connection.recv()
+            msg = pickle.loads(b)
 
             self.rec_message(msg)
             self.received_messages.append(msg.msg_id)
@@ -120,14 +116,10 @@ class ProcessNode(BaseNode):
 
         msg_bytes = pickle.dumps(msg)
         # send message
-        self.socket.sendall(msg_bytes)
+        self.connection.send(msg_bytes)
 
         self.messages_send_counter += 1
         time.sleep(0.01)
-
-    def send_bytes(self, bytes: bytes):
-        """ send bytes to the network """
-        self.socket.sendall(bytes)
 
     def rec_message(self, message):
         # check if we send it or have recieved it earlier
@@ -144,6 +136,11 @@ class ProcessNode(BaseNode):
     def handle_message(self, message: Message):
         print(
             f'node {self.node_id} received message from {message.sending_id} on channel {message.channel} with payload {message.payload}')
+
+        # check if the node is in the ledger
+        if message.sending_id not in self.config_controller.ledger.keys():
+            self.config_controller.handle_message(message, True)
+            return
 
         if message.channel == ChannelID.CONFIG.value:
             self.config_controller.handle_message(message)
@@ -177,7 +174,7 @@ class ProcessNode(BaseNode):
         cnf = self.config_controller.get_nodes_config(message.sending_id)
 
         # at this point we know who the node is and we have its config
-        if self.node_id in cnf.replicating_nodes:
+        if self.node_id in [i.node_id for i in cnf.replicating_nodes]:
             # if we will parse and store the measurement
             m = Measurement.deserialize(message.payload)
             self.storage_controller(m, message.sending_id)
@@ -216,7 +213,7 @@ class ProcessNode(BaseNode):
 
 
 if __name__ == '__main__':
-    node_id = 0x84
+    node_id = 0x9
 
     cnf = NodeConfig(5, 2, [ReplicationInfo(node_id, 0)])
     node = ProcessNode(
@@ -227,10 +224,16 @@ if __name__ == '__main__':
             2,
             [ReplicationInfo(node_id, 0)]
         ),
-        0,
-        0,
+        2,
+        1,
         5
     )
 
-    while True:
-        time.sleep(1)
+    try:
+        while True:
+            time.sleep(1)
+
+    except KeyboardInterrupt:
+        node.disconnect()
+        node.repeated_measurement.stop()
+        print('stopped')

@@ -35,7 +35,18 @@ class NetworkGraph:
 
     def remove_node(self, node: BaseNode):
         """ remove a node from the graph."""
-        self.graph.remove_node(node.node_id)
+        # remove all edges to the node
+        for n in self.get_neighbours(node):
+            if n == node:
+                continue
+
+            if self.graph.has_edge(n, node):
+                self.graph.remove_edge(n, node)
+            if self.graph.has_edge(node, n):
+                self.graph.remove_edge(node, n)
+
+        # delete the node
+        self.graph.remove_node(node)
 
     def get_neighbours(self, node: BaseNode):
         """ get all neighbours of the node """
@@ -44,6 +55,11 @@ class NetworkGraph:
     def draw(self, file_name=None):
         """ draw the graph with the actual positions and ranges.
             if given a file_name it will save the graph to a file. """
+
+
+        # check if there are nodes in the graph
+        if len(self.graph.nodes) == 0:
+            return
 
         # Create dictionaries with the positions and labels of the nodes
         pos = {node: (node.x, node.y) for node in self.graph.nodes}

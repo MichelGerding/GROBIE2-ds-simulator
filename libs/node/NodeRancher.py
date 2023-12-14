@@ -23,6 +23,7 @@ class NodeRancher:
 
     def delete_node(self, node_id):
         """ Delete a node """
+        self.nodes[node_id].shutdown()
         del self.nodes[node_id]
 
     def stop_node(self, node_id=None):
@@ -41,7 +42,9 @@ class NodeRancher:
             return
 
         new_config = NodeConfig(int(reps), int(delay), self.nodes[node_id].config.replicating_nodes)
-        self.nodes[node_id].config = new_config
+        self.nodes[node_id].change_config('measurement_interval', int(delay))
+        self.nodes[node_id].change_config('requested_replications', int(reps))
+        self.nodes[node_id].change_config('replicating_nodes', self.nodes[node_id].config.replicating_nodes)
 
         # TODO:: fix it so we can send messages from client to all nodes
         # self.network.send_message(Message(

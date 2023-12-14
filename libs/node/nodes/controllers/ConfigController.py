@@ -42,7 +42,12 @@ class ConfigController:
             self.change_config('requested_replications', str(config.requested_replications))
 
     def modify_ledger(self, node_id: int, config: NodeConfig):
+        """ Modify the ledger of the node. """
         self.ledger[node_id] = config
+
+    def remove_from_ledger(self, node_id: int):
+        """ Remove a node from the ledger. """
+        del self.ledger[node_id]
 
     def change_config(self, key: str, value):
         """ Change the config of the node. """

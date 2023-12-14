@@ -7,7 +7,6 @@ import threading
 import math
 
 
-
 class ReplicationController:
     """ This class is used to decide which nodes should replicate a measurement. """
 
@@ -72,5 +71,6 @@ class ReplicationController:
                 winners.append(ReplicationInfo(node, sorted_bids[index][1]))
 
         # clear the list of bids and update the winners
+
         self.bids = {}
         self.update_winners(winners)
