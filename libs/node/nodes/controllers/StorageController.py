@@ -1,7 +1,7 @@
 from libs.network.Measurement import Measurement
 
 from datetime import datetime, timezone
-from tinyflux import TinyFlux, Point
+from tinyflux import TinyFlux, Point, TagQuery
 from random import random
 
 import math
@@ -28,3 +28,10 @@ class StorageController:
         ))
 
         return measurement
+
+    def get_data(self, node_id):
+        """ get the data from the database """
+        Tag = TagQuery()
+        Tag["node"] = hex(node_id)
+
+        return self.db.search(Tag)

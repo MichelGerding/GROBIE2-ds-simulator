@@ -10,10 +10,12 @@ class Logger:
         self.stout = sys.stdout
 
     def write(self, obj):
-        self.stout.write(obj)
-        self.file.write(f'{datetime.now()}> {obj}\n')
-        self.file.flush()
+        if obj != '\n':
+            self.file.write(f'{datetime.now()}> {obj}\n')
+            self.file.flush()
 
+        self.stout.write(obj)
+        self.stout.flush()
     def flush(self):
         self.stout.flush()
         self.file.flush()

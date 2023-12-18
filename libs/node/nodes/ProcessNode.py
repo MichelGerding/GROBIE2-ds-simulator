@@ -1,10 +1,9 @@
-
+from libs.node.nodes.abstracts.SocketNode import SocketNode
 from libs.network.Measurement import Measurement
 from libs.node.nodes.controllers.ReplicationController import ReplicationController
 from libs.node.nodes.controllers.StorageController import StorageController
 from libs.node.nodes.controllers.ConfigController import ConfigController
 from libs.node.nodes.actions.RepeatMeasurement import RepeatMeasurement
-from libs.node.nodes.abstracts.BaseNode import BaseNode
 from libs.node.ReplicationInfo import ReplicationInfo
 from libs.RepeatedTimer import RepeatedTimer
 from libs.network.Channel import ChannelID
@@ -13,14 +12,15 @@ from libs.network.Message import Message
 
 import multiprocessing.connection as connection
 
-import threading
-import pickle
 import time
 
 
-class ProcessNode(BaseNode):
+class ProcessNode(SocketNode):
     """ node that runs in a separate process.
-        this is a combination of the randomNode and the SocketClient example."""
+        The functions in this class are almost the same as RandomNode but the node runs in a separate process.
+        This is done so that the node can be externally managed or on a different machine.
+        The node will connect to the network using a socket connection.
+    """
 
     replication_controller: ReplicationController
     storage_controller: StorageController
@@ -29,21 +29,10 @@ class ProcessNode(BaseNode):
 
     connection: connection.Connection
 
-    def __init__(self, network: tuple[str, int], node_id, config, x, y, r):
-        super().__init__(node_id, x, y, r)
-        # network node info
-        self.received_messages = []
-        self.messages_send_counter = 0
+    def __init__(self, network: tuple[str, int], node_id: int, config: NodeConfig, x: int, y: int, r: int):
+        # set up the sockets and the like
+        super().__init__(network, node_id, x, y, r)
 
-        # set up and connect the socket
-        self.connection = self.connect(network[0], network[1])
-
-        # start listening to incoming messages
-        self.listen_thread = threading.Thread(target=self.listen)
-        self.listen_thread.daemon = True
-        self.listen_thread.start()
-
-        # set up rest of the node
         # setup controllers
         self.config_controller = ConfigController(
             node_id,
@@ -73,96 +62,53 @@ class ProcessNode(BaseNode):
         self.repeated_measurement.start()  # start making measurements
         self.send_message(0xFF, self.config.serialize(), ChannelID.DISCOVERY.value)  # broadcast config
 
-    def connect(self, host, port):
-        """ connect to a socket and send the node info """
-        s = connection.Client((host, port))
-        s.send({
-            'node_id': self.node_id,
-            'x': self.x,
-            'y': self.y,
-            'r': self.r
-        })
-
-        return s
-
-    def disconnect(self):
-        """ disconnect from the socket """
-        self.send_message(0xFF, '', ChannelID.DISCONNECT.value)
-        self.connection.close()
-
-
-    def listen(self):
-        """ listen for messages """
-        while True:
-            b = self.connection.recv()
-            msg = pickle.loads(b)
-
-            self.rec_message(msg)
-            self.received_messages.append(msg.msg_id)
-
-    def send_message(self, receiving_id: int, payload, channel):
-        """ send a message to the network """
-        nid_bytes = self.node_id.to_bytes(2, 'big')
-        counter_bytes = self.messages_send_counter.to_bytes(6, 'big')
-        msg_id = b'|'.join([nid_bytes, counter_bytes])
-
-        msg = Message(
-            receiving_id=receiving_id,
-            sending_id=self.node_id,
-            channel=channel,
-            payload=payload,
-            msg_id=msg_id
-        )
-
-        msg_bytes = pickle.dumps(msg)
-        # send message
-        self.connection.send(msg_bytes)
-
-        self.messages_send_counter += 1
-        time.sleep(0.01)
-
-    def rec_message(self, message):
-        # check if we send it or have recieved it earlier
-        if message.sending_id == self.node_id or message.msg_id in self.received_messages:
-            return
-
-        # propagate the message if it is not only for this node
-        if message.receiving_id != self.node_id:
-            self.propagate_message(message)
-
-        if message.receiving_id == self.node_id or message.receiving_id == 0xFF:
-            self.handle_message(message)
-
+    ##########################################
+    # node functions
+    ##########################################
     def handle_message(self, message: Message):
-        print(
-            f'node {self.node_id} received message from {message.sending_id} on channel {message.channel} with payload {message.payload}')
+        # print(
+        #     f'node {self.node_id} received message from {message.sending_id} on channel {message.channel} with payload {message.payload}')
 
         # check if the node is in the ledger
-        if message.sending_id not in self.config_controller.ledger.keys():
-            self.config_controller.handle_message(message, True)
+        if self.node_id == message.sending_id:
             return
 
-        if message.channel == ChannelID.CONFIG.value:
-            self.config_controller.handle_message(message)
-        elif message.channel == ChannelID.MEASUREMENT.value:
-            self.handle_measurement_message(message)
-        elif message.channel == ChannelID.DISCOVERY.value:
-            self.handle_discovery_message(message)
-        elif message.channel == ChannelID.REPLICATION_BIDDING.value:
-            if message.receiving_id != self.node_id or \
-                    len(self.config_controller['replicating_nodes']) >= self.config.requested_replications:
-                return
+            # check if the node is in the ledger
+        # if message.sending_id not in self.config_controller.ledger:
+        #     return self.config_controller.handle_message(message, True)
 
-            self.replication_controller.add_bid(message.sending_id, int(message.payload))
+            # call the function that handles messages for the channel
+        if hasattr(self, 'handle_' + ChannelID(message.channel).name.lower() + '_message'):
+            print(f'handling message on channel {ChannelID(message.channel).name.lower()}', message)
+            getattr(self, 'handle_' + ChannelID(message.channel).name.lower() + '_message')(message)
+        else:
+            print(f'No handler for channel {ChannelID(message.channel).name.lower()}')
 
-    def propagate_message(self, message: Message):
-        # TODO:: implement better routing algorithm
-        message.hops += 1
-        self.send_message(message.receiving_id, message.payload, message.channel)
+    def handle_replication_bidding_message(self, message: Message):
+        if message.receiving_id != self.node_id or \
+                len(self.config_controller['replicating_nodes']) >= self.config.requested_replications:
+            return
 
-    def handle_measurement_message(self, message):
+        self.replication_controller.add_bid(message.sending_id, int(message.payload))
+
+    def handle_config_message(self, message: Message):
+        """ handle config messages. these messages contain the config of a node. """
+        self.config_controller.handle_message(message)
+
+    def handle_discovery_message(self, message: Message):
+        """ if we get a discovery request we will broadcast our config. we will broadcast instead of uni-cast so
+            that all nodes can update their ledger as one or more nodes don't have our config"""
+        self.send_message(message.sending_id, self.config.serialize(), ChannelID.CONFIG.value)
+
+    def handle_measurement_message(self, message: Message):
+        """ handle messages that contain measurements we will only store the measurements if we know the node that
+            send it, and they want us to replicate if the node doesn't want us to replicate we will check if he has
+            enough replicating nodes if he doesn't we will send a replication bidding message. this contains with
+            the amount of hops we are away from the node that send the measurement. The measurement will be
+            discarded but if we win we will store the next measurements we get from the node. """
+
         # find the nodes config in ledger
-        if message.sending_id not in self.config_controller.ledger:
+        if message.sending_id not in self.ledger.keys():
             # if the node isn't in the ledger we will send a discovery message to the node.
             # this will prompt the node to send its config onto the network.
             # this message doesn't contain a message as it is not needed
@@ -187,42 +133,41 @@ class ProcessNode(BaseNode):
 
             if len(cnf.replicating_nodes) < cnf.requested_replications:
                 # send replication bidding message
-                self.send_message(message.sending_id, str(message.hops), ChannelID.REPLICATION_BIDDING.value)
-
-    def handle_discovery_message(self, message):
-        self.send_message(message.sending_id, str(self.config), ChannelID.CONFIG.value)
-
+                self.send_message(message.sending_id, str(message.ttl), ChannelID.REPLICATION_BIDDING.value)
 
     def change_config(self, key: str, value):
         """ Change the config of the node. """
-        # depending on which value needs to be changed we will convert the value to a different type
-
-        # TODO:: Fix this
-        # if key == 'measurement_interval':
-        #     self..change_interval(float(value))
-        #     self.config.measurement_interval = float(value)
-
-        self.send_config_update()
+        print(f'changing config {key} to {value}')
+        self.config_controller.change_config(key, value)
 
     def send_config_update(self):
         self.send_message(0xFF, str(self.config), ChannelID.CONFIG.value)
+
+    def shutdown(self):
+        """ Stop sending measurements to the network. """
+        self.repeated_measurement.stop()
+        self.disconnect()
 
     @property
     def config(self):
         return self.config_controller.config
 
+    @property
+    def ledger(self):
+        return self.config_controller.ledger
+
 
 if __name__ == '__main__':
-    node_id = 0x9
+    node_id = int(input('node id: ') or 5)
 
-    cnf = NodeConfig(5, 2, [ReplicationInfo(node_id, 0)])
+    cnf = NodeConfig(5, 2, {node_id: 0})
     node = ProcessNode(
         ('localhost', 8080),
         node_id,
         NodeConfig(
             5,
             2,
-            [ReplicationInfo(node_id, 0)]
+            {node_id: 0}
         ),
         2,
         1,
@@ -234,6 +179,5 @@ if __name__ == '__main__':
             time.sleep(1)
 
     except KeyboardInterrupt:
-        node.disconnect()
-        node.repeated_measurement.stop()
+        node.shutdown()
         print('stopped')

@@ -1,3 +1,6 @@
+import json
+import pickle
+
 from libs.node.nodes.controllers.ReplicationController import ReplicationController
 from libs.node.nodes.controllers.StorageController import StorageController
 from libs.node.nodes.controllers.ConfigController import ConfigController
@@ -61,12 +64,26 @@ class RandomNode(NetworkNode):
         if self.node_id == message.sending_id:
             return
 
-        # check if the node is in the ledger
-        if message.sending_id not in self.config_controller.ledger.keys():
-            self.config_controller.handle_message(message, True)
-
+        # call the function that handles messages for the channel
         if hasattr(self, 'handle_' + ChannelID(message.channel).name.lower() + '_message'):
             getattr(self, 'handle_' + ChannelID(message.channel).name.lower() + '_message')(message)
+        else:
+            print(f'No handler for channel {ChannelID(message.channel).name.lower()}')
+
+    def handle_client_message(self, message: Message):
+        """ handle messages that are send by the user. """
+        # parse the clients message. this will have the following format
+        # {"cmd", "node_id", "daterange?": {"start", "end"}}
+        print(f'handling client message {message.payload}')
+
+        query_info = json.loads(message.payload)
+        node_id = query_info['node_id']
+
+        # get the data from the database
+        data = self.storage_controller.get_data(node_id)
+        bits = pickle.dumps(data)
+        # send the message on the client network
+        self.send_message(message.sending_id, bits, ChannelID.CLIENT.value)
 
     def handle_replication_bidding_message(self, message: Message):
         if message.receiving_id != self.node_id or \
@@ -92,7 +109,7 @@ class RandomNode(NetworkNode):
             discarded but if we win we will store the next measurements we get from the node. """
 
         # find the nodes config in ledger
-        if message.sending_id not in self.ledger:
+        if message.sending_id not in self.ledger.keys():
             # if the node isn't in the ledger we will send a discovery message to the node.
             # this will prompt the node to send its config onto the network.
             # this message doesn't contain a message as it is not needed
@@ -104,7 +121,7 @@ class RandomNode(NetworkNode):
         cnf = self.config_controller.get_nodes_config(message.sending_id)
 
         # at this point we know who the node is and we have its config
-        if self.node_id in [i.node_id for i in cnf.replicating_nodes]:
+        if self.node_id in cnf.replicating_nodes:
             # if we will parse and store the measurement
             m = Measurement.deserialize(message.payload)
             self.storage_controller(m, message.sending_id)
@@ -117,13 +134,12 @@ class RandomNode(NetworkNode):
 
             if len(cnf.replicating_nodes) < cnf.requested_replications:
                 # send replication bidding message
-                self.send_message(message.sending_id, str(message.hops), ChannelID.REPLICATION_BIDDING.value)
+                self.send_message(message.sending_id, str(message.ttl), ChannelID.REPLICATION_BIDDING.value)
 
     def shutdown(self):
         """ Stop sending measurements to the network. """
         self.repeated_measurement.stop()
         self.send_message(0xFF, '', ChannelID.DISCONNECT.value)
-
 
     def change_config(self, key: str, value):
         """ Change the config of the node. """

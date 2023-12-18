@@ -9,7 +9,7 @@ from globals import globals
 import threading
 
 from libs.node.nodes.abstracts.BaseNode import BaseNode
-from libs.node.nodes.SocketNode import ServerSocketNode
+from libs.node.nodes.ServerSocketNode import ServerSocketNode
 
 
 class Network:
@@ -57,13 +57,13 @@ class Network:
 
     def send_message(self, message: Message, node: BaseNode):
         """ send a message to the neighbours of the node """
-        globals['ui'].add_text_to_column2(f'sending message to node {message.receiving_id} on channel {message.channel} from {message.sending_id} with {message.hops} hops\n')
+        globals['ui'].add_text_to_column2(f'sending message to node {message.receiving_id} on channel {message.channel} from {message.sending_id} with {message.ttl} hops\n')
         # log into file
         mess_dict = {
             'sending_id': message.sending_id,
             'receiving_id': message.receiving_id,
             'channel': message.channel,
-            'hops': message.hops,
+            'hops': message.ttl,
             'payload': message.payload
         }
         self.file.write(str(mess_dict) + '\n')

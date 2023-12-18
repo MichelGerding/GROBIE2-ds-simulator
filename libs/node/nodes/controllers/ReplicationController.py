@@ -65,10 +65,8 @@ class ReplicationController:
         for i in range(min(winner_count, math.ceil(len(sorted_bids) / segment_size))):
             index = randint(i * segment_size, (i + 1) * segment_size - 1)
 
-            node = sorted_bids[index][0]
-            if node not in winners:
-                # append the node and the amount of hops it is away from the node that send the measurement
-                winners.append(ReplicationInfo(node, sorted_bids[index][1]))
+            node = sorted_bids[index]
+            winners[node[0]] = node[1]
 
         # clear the list of bids and update the winners
 

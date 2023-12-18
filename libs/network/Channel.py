@@ -12,3 +12,4 @@ class ChannelID(Enum):
     DISCOVERY = 0x02
     REPLICATION_BIDDING = 0x03
     DISCONNECT = 0x04
+    CLIENT = 0x05

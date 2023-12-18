@@ -46,11 +46,7 @@ class CommandHandler:
         if len(cwd.split(' ')) > 1:
             filename = cwd.split(' ')[1]
 
-        mode = 'w'
-        if filename.endswith('.pickle'):
-            mode = 'wb'
-
-        with open(filename, mode) as f:
+        with open(filename, 'wb') as f:
             nodes_obj = []
             for node in self.nr.nodes.values():
                 nodes_obj.append({
@@ -74,16 +70,15 @@ class CommandHandler:
 
             if filename.endswith('.pickle'):
                 return f.write(pickle.dumps(nodes_obj))
-            f.write(json.dumps(nodes_obj, default=lambda o: o.__dict__))
+            f.write(json.dumps(nodes_obj, default=lambda o: o.__dict__).encode('utf-8'))
 
     def handle_modify_command(self, cwd):
         """ modify {node_id} {replications} {delay} """
         parts = cwd.split(' ')
         try:
-            self.nr.update_config(int(parts[1], 16), parts[2], parts[3])
+            return self.nr.update_config(int(parts[1], 16), parts[2], parts[3])
         except IndexError:
             return 'invalid amount of arguments. 3 arguments are required'
-        return f'modified node {parts[1]}'
 
     def handle_delete_command(self, cwd):
         """ delete a node with the given id

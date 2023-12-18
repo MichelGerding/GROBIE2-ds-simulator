@@ -45,7 +45,7 @@ class NetworkNode(BaseNode, ABC):
 
     def propagate_message(self, message: Message):
         # TODO:: implement efficient routing algorithm
-        message.hops += 1
+        message.ttl -= 1
         self.network.send_message(message, self)
 
     @abstractmethod

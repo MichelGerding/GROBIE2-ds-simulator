@@ -1,12 +1,11 @@
+import json
+
+from libs.helpers.dict import serialize_dict
+from libs.network.Channel import ChannelID
 from libs.node.NodeConfig import NodeConfig
 from libs.network.Message import Message
 
 from typing import Callable
-
-import json
-
-from libs.node.ReplicationInfo import ReplicationInfo
-
 
 class ConfigController:
     """ This class is used to handle the config of the node.
@@ -28,18 +27,23 @@ class ConfigController:
         self.send_message = send_message
 
     def handle_message(self, message: Message, own_config: bool = False):
-        json_parsed = json.loads(message.payload)
-        config = NodeConfig(
-            measurement_interval=json_parsed['measurement_interval'],
-            requested_replications=json_parsed['requested_replications'],
-            replicating_nodes=[ReplicationInfo(int(x['node_id'], 16), x['hops']) for x in json_parsed['replicating_nodes']]
-        )
+        if message.channel == ChannelID.CONFIG.value:
+            if isinstance(message.payload, str):
+                obj = json.loads(message.payload)
+                config = NodeConfig(
+                    requested_replications=obj['requested_replications'],
+                    measurement_interval=obj['measurement_interval'],
+                    replicating_nodes=obj['replicating_nodes'],
+                    replication_timeout=obj['replication_timeout']
+                )
+            else:
+                config = NodeConfig.deserialize(message.payload)
 
-        self.ledger[message.sending_id] = config
+            self.modify_ledger(message.sending_id, config)
 
-        if own_config:
-            self.change_config('measurement_interval', str(config.measurement_interval))
-            self.change_config('requested_replications', str(config.requested_replications))
+            if own_config:
+                self.change_config('measurement_interval', str(config.measurement_interval), False)
+                self.change_config('requested_replications', str(config.requested_replications))
 
     def modify_ledger(self, node_id: int, config: NodeConfig):
         """ Modify the ledger of the node. """
@@ -49,14 +53,11 @@ class ConfigController:
         """ Remove a node from the ledger. """
         del self.ledger[node_id]
 
-    def change_config(self, key: str, value):
+    def change_config(self, key: str, value, update=True):
         """ Change the config of the node. """
         # depending on which value needs to be changed we will convert the value to a different type
 
-        # TODO:: Fix this
-        # if key == 'measurement_interval':
-        #     self..change_interval(float(value))
-        #     self.config.measurement_interval = float(value)
+        # TODO:: allow modification to the measurement interval
 
         if key == 'requested_replications':
             self.config.requested_replications = int(value)
@@ -64,11 +65,17 @@ class ConfigController:
         if key == 'replicating_nodes':
             self.config.replicating_nodes = value
 
-        self.send_config_update(self.config)
+        if update:
+            self.send_config_update(self.config)
 
-    def send_config_update(self, new_config: NodeConfig):
-        """ send the config to the network"""
-        self.send_message(str(new_config))
+    def send_config_update(self, new_config: NodeConfig, full_config=True):
+        """ send the config to the network
+        """
+        if full_config:
+            return self.send_message(str(new_config))
+
+        diff = self.config.diff_config(new_config)
+        self.send_message(serialize_dict(diff))
 
     def get_nodes_config(self, node_id: int):
         return self.ledger[node_id]

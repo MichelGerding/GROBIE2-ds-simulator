@@ -18,6 +18,7 @@ class ServerSocketNode(BaseNode):
         self.listen_thread.daemon = True
         self.listen_thread.start()
 
+        print(network)
         self.network = network
         network.join_network(self)
 
@@ -32,9 +33,19 @@ class ServerSocketNode(BaseNode):
 
     def rec_message(self, message: Message):
         # send message over socket
-        self.connection.send(message.serialize())
+        try:
+            self.connection.send(message.serialize())
+        except:
+            self.shutdown()
+
+    def shutdown(self):
+        """ shutdown the node """
+        self.connection.close()
+        self.network.leave_network(self)
 
     def send_message(self, message: Message):
         """ send a message to the network """
         # create message
+        print(self)
+
         self.network.send_message(message, self)

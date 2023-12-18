@@ -12,7 +12,7 @@ class Message:
 
     # routing info
     msg_id: bytes
-    hops: int = 0
+    ttl: int = 10
 
     def serialize(self):
         """ serialize a measurement to a string """

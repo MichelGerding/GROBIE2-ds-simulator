@@ -27,4 +27,4 @@ class Measurement:
 
     def serialize(self):
         """ serialize a measurement to a string """
-        return str(self)
+        return json.dumps(self.__dict__, sort_keys=True)

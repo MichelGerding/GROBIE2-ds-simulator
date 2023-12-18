@@ -14,7 +14,7 @@ class NodeRancher:
 
     def create_node(self, node_id, x, y, r):
         """ Create a new node with default config. if node with id exists it will be replaced """
-        config = NodeConfig(4, 2, [ReplicationInfo(node_id, 0)])
+        config = NodeConfig(4, 2, {node_id: 0})
         n = RandomNode(self.network, node_id, config, x, y, r)
 
         if node_id in self.nodes:
@@ -38,19 +38,10 @@ class NodeRancher:
         """ Send message to update nodes config.
             this will use the same method as a node would use to update its config """
         if node_id not in self.nodes:
-            print('node not found')
-            return
+            return f'node {node_id} not found'
 
-        new_config = NodeConfig(int(reps), int(delay), self.nodes[node_id].config.replicating_nodes)
+        # TODO:: fix it so we can send messages from client to all nodes
         self.nodes[node_id].change_config('measurement_interval', int(delay))
         self.nodes[node_id].change_config('requested_replications', int(reps))
         self.nodes[node_id].change_config('replicating_nodes', self.nodes[node_id].config.replicating_nodes)
-
-        # TODO:: fix it so we can send messages from client to all nodes
-        # self.network.send_message(Message(
-        #     message=str(new_config),
-        #     sending_id=0xFF,
-        #     receiving_id=node_id,
-        #     channel=0x00
-        # ))
-
+        return f'node {node_id} updated'
