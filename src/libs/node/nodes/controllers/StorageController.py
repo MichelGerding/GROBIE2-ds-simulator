@@ -19,7 +19,7 @@ class StorageController:
         # create the database
         self.db = TinyFlux(self.path)
 
-    def __call__(self, measurement: Measurement, node_id: int):
+    def __call__(self, measurement: Measurement, node_id: int) -> Measurement:
         """ store a measurement in the database """
         self.db.insert(Point(
             time=datetime.now(timezone.utc),
@@ -29,9 +29,10 @@ class StorageController:
 
         return measurement
 
-    def get_data(self, node_id):
+    def get_data(self, node_id) -> list[Measurement]:
         """ get the data from the database """
         Tag = TagQuery()
         Tag["node"] = hex(node_id)
 
-        return self.db.search(Tag)
+        res = self.db.search(Tag)
+        return [Measurement(dt=point.time, temp=point.fields['temp'], light=point.fields['light']) for point in res]

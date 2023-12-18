@@ -40,13 +40,13 @@ class TerminalUI:
 
         self.cmd_input = curses.newwin(1, curses.COLS, curses.LINES - 1, 0)
 
-    def draw(self):
+    def draw(self) -> None:
         """ Draw the updated screen """
         for i in range(curses.LINES - 1):
             self.stdscr.addch(i, curses.COLS // 2, '|')
         self.stdscr.refresh()
 
-    def add_text_to_column1(self, text, count=True):
+    def add_text_to_column1(self, text, count=True) -> None:
         """ add text to the first/left column of the screen. this does not include the help text """
         if count:
             self.column1.addstr(f'{self.col1_msgs}> {text}\n')
@@ -56,7 +56,7 @@ class TerminalUI:
 
         self.column1.refresh()
 
-    def add_text_to_column2(self, text, count=True):
+    def add_text_to_column2(self, text, count=True) -> None:
         """ add text to the second/right column of the screen. this does not include the column label """
         if count:
             self.column2.addstr(f'{self.col2_msgs}> {text}\n')
@@ -65,8 +65,8 @@ class TerminalUI:
             self.column2.addstr(f' > {text}\n')
         self.column2.refresh()
 
-    def run(self):
-        """ Run the terminal UI """
+    def run(self) -> None:
+        """ Run the terminal UI. this is a blocking function """
         while True:
             self.cmd_input.addstr(0, 0, "Command: ")
             self.cmd_input.refresh()

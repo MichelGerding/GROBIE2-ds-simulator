@@ -6,7 +6,7 @@ from libs.node.nodes.controllers.StorageController import StorageController
 from libs.node.nodes.controllers.ConfigController import ConfigController
 from libs.node.nodes.actions.RepeatMeasurement import RepeatMeasurement
 from libs.node.nodes.abstracts.NetworkNode import NetworkNode
-from libs.network.networks.Network import Network
+from libs.network.networks import Network
 from libs.network.Measurement import Measurement
 from libs.RepeatedTimer import RepeatedTimer
 from libs.node.NodeConfig import NodeConfig

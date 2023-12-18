@@ -26,7 +26,7 @@ class ConfigController:
 
         self.send_message = send_message
 
-    def handle_message(self, message: Message, own_config: bool = False):
+    def handle_message(self, message: Message, own_config: bool = False) -> None:
         if message.channel == ChannelID.CONFIG.value:
             if isinstance(message.payload, str):
                 obj = json.loads(message.payload)
@@ -45,15 +45,15 @@ class ConfigController:
                 self.change_config('measurement_interval', str(config.measurement_interval), False)
                 self.change_config('requested_replications', str(config.requested_replications))
 
-    def modify_ledger(self, node_id: int, config: NodeConfig):
+    def modify_ledger(self, node_id: int, config: NodeConfig) -> None:
         """ Modify the ledger of the node. """
         self.ledger[node_id] = config
 
-    def remove_from_ledger(self, node_id: int):
+    def remove_from_ledger(self, node_id: int) -> None:
         """ Remove a node from the ledger. """
         del self.ledger[node_id]
 
-    def change_config(self, key: str, value, update=True):
+    def change_config(self, key: str, value, update=True) -> None:
         """ Change the config of the node. """
         # depending on which value needs to be changed we will convert the value to a different type
 
@@ -68,7 +68,7 @@ class ConfigController:
         if update:
             self.send_config_update(self.config)
 
-    def send_config_update(self, new_config: NodeConfig, full_config=True):
+    def send_config_update(self, new_config: NodeConfig, full_config=True) -> None:
         """ send the config to the network
         """
         if full_config:
@@ -77,12 +77,12 @@ class ConfigController:
         diff = self.config.diff_config(new_config)
         self.send_message(serialize_dict(diff))
 
-    def get_nodes_config(self, node_id: int):
+    def get_nodes_config(self, node_id: int) -> NodeConfig:
         return self.ledger[node_id]
 
-    def get_current_replicators(self, node_id):
+    def get_current_replicators(self, node_id) -> dict[int, int]:
         return self.ledger[node_id].replicating_nodes
 
-    # indes the config of the node using []
+    # inde the config of the node using []
     def __getitem__(self, key):
         return getattr(self.config, key)

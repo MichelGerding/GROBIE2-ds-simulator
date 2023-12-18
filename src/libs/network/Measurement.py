@@ -1,19 +1,27 @@
-from dataclasses import dataclass
-
 import json
+from datetime import datetime, timezone
 
-
-@dataclass
 class Measurement:
     """ A measurement contains a temperature and light value.
         This is the data that will be sent to the network."""
     temp: float
     light: int
+    datetime: datetime = None
+
+    def __init__(self, temp, light, dt=None):
+        self.temp = temp
+        self.light = light
+
+        if dt is None:
+            # use current time
+            dt = datetime.now(timezone.utc)
+        self.datetime = dt
 
     def __str__(self):
         return json.dumps({
             'temp': self.temp,
-            'light': self.light
+            'light': self.light,
+            'datetime': self.datetime.timestamp()
         }, sort_keys=True)
 
     @staticmethod

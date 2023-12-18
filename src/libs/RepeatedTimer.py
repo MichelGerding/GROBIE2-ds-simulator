@@ -25,7 +25,7 @@ class RepeatedTimer(object):
         self.start()
         self.function(*self.args, **self.kwargs)
 
-    def start(self):
+    def start(self) -> None:
         """ start the task """
         if not self.is_running:
             self._timer = Timer(self.interval, self._run)
@@ -33,7 +33,7 @@ class RepeatedTimer(object):
             self._timer.start()
             self.is_running = True
 
-    def stop(self):
+    def stop(self) -> None:
         """ stop the task """
         if self._timer:
             self._timer.cancel()

@@ -1,5 +1,3 @@
-from libs.node.ReplicationInfo import ReplicationInfo
-
 from random import randint
 from typing import Callable
 
@@ -13,7 +11,7 @@ class ReplicationController:
     bids: dict[int, int]
     timeout: float
     requested_winners: int
-    get_current_replicators: Callable[[], list[ReplicationInfo]]
+    get_current_replicators: Callable[[], dict[int, int]]
 
     timer: None | threading.Timer
 
@@ -21,8 +19,8 @@ class ReplicationController:
             self,
             timeout: float,
             requested_winners: int,
-            get_current_replicators: Callable[[], list[ReplicationInfo]],
-            update_winners: Callable[[list[ReplicationInfo]], None]):
+            get_current_replicators: Callable[[], dict[int, int]],
+            update_winners: Callable[[dict[int, int]], None]):
         self.bids = {}
         self.timeout = timeout
         self.requested_winners = requested_winners
@@ -32,7 +30,7 @@ class ReplicationController:
 
         self.timer = None
 
-    def add_bid(self, node_id: int, bid: int):
+    def add_bid(self, node_id: int, bid: int) -> None:
         """ Add a bid to the list of bids. """
 
         # check if the timer is running
@@ -45,7 +43,7 @@ class ReplicationController:
         # add the bid to the list of bids
         self.bids[node_id] = bid
 
-    def decide_winner(self):
+    def decide_winner(self) -> None:
         """ Decide which node should replicate the measurement. """
         # TODO:: implement better algorithm to decide which nodes should replicate the measurement
         winners = self.get_current_replicators()

@@ -16,14 +16,14 @@ class NetworkGraph:
     def __init__(self):
         self.graph = nx.DiGraph()
 
-    def add_node(self, node: BaseNode):
+    def add_node(self, node: BaseNode) -> None:
         """ add a node to the graph. this will also recompute the neighbours of the nodes."""
         self.graph.add_node(node)
         # get all nodes that are within range of the new node
         for n in self.graph.nodes:
             self.update_neighbours(n)
 
-    def update_neighbours(self, node: BaseNode):
+    def update_neighbours(self, node: BaseNode) -> None:
         """ update the neighbours of the node """
         # get all nodes that are within range of the new node
         nodes = list(self.graph.nodes)  # Create a copy of the nodes
@@ -33,7 +33,7 @@ class NetworkGraph:
             if n.distance(node) <= n.r and n != node:
                 self.graph.add_edge(n, node, weight=n.distance(node))
 
-    def remove_node(self, node: BaseNode):
+    def remove_node(self, node: BaseNode) -> None:
         """ remove a node from the graph."""
         # remove all edges to the node
         for n in self.get_neighbours(node):
@@ -48,11 +48,11 @@ class NetworkGraph:
         # delete the node
         self.graph.remove_node(node)
 
-    def get_neighbours(self, node: BaseNode):
+    def get_neighbours(self, node: BaseNode) -> list[BaseNode]:
         """ get all neighbours of the node """
         return list(self.graph.neighbors(node))
 
-    def draw(self, file_name=None):
+    def draw(self, file_name=None) -> None:
         """ draw the graph with the actual positions and ranges.
             if given a file_name it will save the graph to a file. """
 

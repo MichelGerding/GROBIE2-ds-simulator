@@ -25,7 +25,7 @@ class NetworkNode(BaseNode, ABC):
 
         network.join_network(self)
 
-    def rec_message(self, message: Message):
+    def rec_message(self, message: Message) -> None:
         """ handle messages that are received """
         # if the message was our own message, ignore it
         if message.sending_id == self.node_id:
@@ -43,7 +43,7 @@ class NetworkNode(BaseNode, ABC):
         if message.receiving_id == self.node_id or message.receiving_id == 0xFF:
             self.handle_message(message)
 
-    def propagate_message(self, message: Message):
+    def propagate_message(self, message: Message) -> None:
         # TODO:: implement efficient routing algorithm
         message.ttl -= 1
         self.network.send_message(message, self)
@@ -56,7 +56,7 @@ class NetworkNode(BaseNode, ABC):
     def __str__(self):
         return '({self.x}, {self.y}, {self.r})'
 
-    def send_message(self, receiving_id: int, payload, channel):
+    def send_message(self, receiving_id: int, payload, channel) -> None:
         """ send a message to the network """
 
         # create a message id which consists of the node id and a counter converted to bytes seperated with '|'

@@ -1,5 +1,4 @@
-from libs.node.ReplicationInfo import ReplicationInfo
-from libs.network.networks.Network import Network
+from libs.network.networks import Network
 from libs.node.nodes.RandomNode import RandomNode
 from libs.node.NodeConfig import NodeConfig
 

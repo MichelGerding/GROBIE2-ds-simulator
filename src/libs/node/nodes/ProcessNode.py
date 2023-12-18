@@ -4,7 +4,6 @@ from libs.node.nodes.controllers.ReplicationController import ReplicationControl
 from libs.node.nodes.controllers.StorageController import StorageController
 from libs.node.nodes.controllers.ConfigController import ConfigController
 from libs.node.nodes.actions.RepeatMeasurement import RepeatMeasurement
-from libs.node.ReplicationInfo import ReplicationInfo
 from libs.RepeatedTimer import RepeatedTimer
 from libs.network.Channel import ChannelID
 from libs.node.NodeConfig import NodeConfig
@@ -27,7 +26,7 @@ class ProcessNode(SocketNode):
     config_controller: ConfigController
     repeated_timer: RepeatedTimer
 
-    connection: connection.Connection
+    conn: connection.Connection
 
     def __init__(self, network: tuple[str, int], node_id: int, config: NodeConfig, x: int, y: int, r: int):
         # set up the sockets and the like

@@ -14,5 +14,5 @@ class BaseNode(ABC):
         """ handle messages that are received """
         raise NotImplementedError("Method is abstract and not implemented")
 
-    def distance(self, node):
+    def distance(self, node) -> float:
         return ((self.x - node.x) ** 2 + (self.y - node.y) ** 2) ** 0.5

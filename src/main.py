@@ -9,7 +9,7 @@ from libs.Logger import Logger
 from globals import globals
 
 
-def setup_ui(command_handler: CommandHandler):
+def setup_ui(command_handler: CommandHandler) -> TerminalUI:
     help_message = ("command log \n"
                     "load [file]                 run commands from file\n"
                     "create (node_id) (x) (y) (power)      create nodes\n"
@@ -18,7 +18,7 @@ def setup_ui(command_handler: CommandHandler):
                     "save/print [file]      save config/network to file")
     return TerminalUI(help_message, "Network log", command_handler)
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument('--port', type=int, default=9174)
     parser.add_argument('--log', type=str, default='tmp/log.txt')

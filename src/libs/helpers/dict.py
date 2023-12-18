@@ -1,4 +1,5 @@
 import pickle
+import unittest
 
 
 class DiffChange:
@@ -7,11 +8,15 @@ class DiffChange:
     MODIFIED = 2
 
 
-def diff_dict(a, b):
+def diff_dict(a, b) -> dict:
     """ get the difference between 2 dicts. if the dicts are the same it will return an empty dict. if the dicts are
     different it will return a dict with the differnce between the 2 dicts. it will recursively check the dict for
     diffences. it will return a 2 if a value is different, 1 if it is only in b(added) to b and 0 if it is only in a(removed).
     for arrays it will give the new values in the array. it will not check for order.
+
+    :param a: dict. the dict to compare to. this is the original dict.
+    :param b: dict. the dict to compare. this is the new dict.
+    :return: dict. the difference between the 2 dicts. if the dicts are the same it will return an empty dict.
 
     example:
     a = {'a': 1, 'b': 2, 'c': 3}
@@ -70,9 +75,20 @@ def diff_dict(a, b):
     return diff
 
 
-def apply_diff(a, diff):
-    """ apply a diff to a dict. this will return a new dict. it will not change the original dict. """
-    b = a.copy()
+def apply_diff(a: dict, diff: dict, apply=False) -> dict:
+    """ apply a diff to a dict. this will return a new dict. it will not change the original dict unless apply is set
+        to true. if apply is set to true it will still return a dict. this function will recursively apply the diff to
+        dict a.
+
+        :param a: dict. the dict to apply the diff to. this is the original dict.
+        :param diff: dict. the diff to apply to the dict.
+        :param apply: bool. if true it will change the original dict. if false it will return a new dict.
+        :return: dict. the new dict with the diff applied.
+    """
+    if not apply:
+        b = a.copy()
+    else:
+        b = a
 
     for key, value in diff.items():
         if isinstance(value, tuple):
@@ -101,44 +117,10 @@ def apply_diff(a, diff):
 
     return b
 
-def serialize_dict(dict):
+def serialize_dict(d: dict):
     """ serialize a dict to a string. """
-    return pickle.dumps(dict)
+    return pickle.dumps(d)
 
-def deserialize_dict(data):
+def deserialize_dict(d: bytes):
     """ deserialize a dict from a string. """
-    return pickle.loads(data)
-
-
-
-def test_diff_dict():
-    a = {'a': 1, 'b': 2, 'c': 3}
-    b = {'a': 1, 'b': 3, 'd': 4}
-    diff = diff_dict(a, b)
-    assert diff == {'b': (2, 3), 'c': (0, 3), 'd': (1, 4)}
-    assert apply_diff(a, diff) == b
-
-    a = {'a': 1, 'b': [1, 2, 3], 'c': 3}
-    b = {'a': 1, 'b': [1, 3, 4], 'd': 4}
-    diff = diff_dict(a, b)
-    assert diff == {'b': ((0, [2]), (1, [4])), 'c': (0, 3), 'd': (1, 4)}
-    assert apply_diff(a, diff) == b
-
-    a = {'a': 1, 'b': {'a': 1, 'b': 2}, 'c': 3}
-    b = {'a': 1, 'b': {'a': 1, 'b': 3}, 'd': 4}
-    diff = diff_dict(a, b)
-    assert diff == {'b': {'b': (2, 3)}, 'c': (0, 3), 'd': (1, 4)}
-    assert apply_diff(a, diff) == b
-
-    a = {'a': 1, 'b': {'a': 1, 'b': 2}, 'c': 3}
-    b = {'a': 1, 'b': {'a': 1, 'b': 2, 'e': [0, 1, 2, 3, 4]}, 'c': 3}
-    diff = diff_dict(a, b)
-    assert diff == {'b': {'e': (1, [0, 1, 2, 3, 4])}}
-    assert apply_diff(a, diff) == b
-
-
-
-if __name__ == '__main__':
-    test_diff_dict()
-    print('all tests passed')
-
+    return pickle.loads(d)

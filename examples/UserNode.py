@@ -1,5 +1,4 @@
 from libs.node.nodes.abstracts.SocketNode import SocketNode
-from libs.node.ReplicationInfo import ReplicationInfo
 from libs.node.nodes.controllers.ConfigController import ConfigController
 from libs.network.Channel import ChannelID
 from libs.node.NodeConfig import NodeConfig
@@ -15,7 +14,7 @@ class UserNode(SocketNode):
         The node will connect to the network using a socket connection.
     """
 
-    connection: connection.Connection
+    conn: connection.Connection
 
     def __init__(self, network: tuple[str, int], node_id: int, cnf: NodeConfig, x: int, y: int, r: int):
         # set up the sockets and the like
