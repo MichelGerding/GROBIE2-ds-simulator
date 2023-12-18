@@ -18,11 +18,7 @@ class Measurement:
         self.datetime = dt
 
     def __str__(self):
-        return json.dumps({
-            'temp': self.temp,
-            'light': self.light,
-            'datetime': self.datetime.timestamp()
-        }, sort_keys=True)
+        return self.serialize()
 
     @staticmethod
     def deserialize(data: str):
@@ -30,8 +26,17 @@ class Measurement:
         data = json.loads(data)
         return Measurement(
             temp=data['temp'],
-            light=data['light']
+            light=data['light'],
+            dt=datetime.fromtimestamp(data['datetime'], timezone.utc)
         )
+
+    @property
+    def __dict__(self):
+        return {
+            'temp': self.temp,
+            'light': self.light,
+            'datetime': self.datetime.timestamp()
+        }
 
     def serialize(self):
         """ serialize a measurement to a string """

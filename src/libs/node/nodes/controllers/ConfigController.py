@@ -12,8 +12,7 @@ class ConfigController:
         this includes sending the config to the network and receiving the config from the network.
         this logic is moved into a seperate class to make it easier to change"""
 
-    # TODO:: implement diffing of config to only send the changed values
-    # TODO:: send messages as bytes. this will reduce the size of the messages
+    # TODO:: make use of diffing the config. this will reduce the size of the messages
 
     config: NodeConfig
     ledger: dict[int, NodeConfig]
@@ -28,16 +27,7 @@ class ConfigController:
 
     def handle_message(self, message: Message, own_config: bool = False) -> None:
         if message.channel == ChannelID.CONFIG.value:
-            if isinstance(message.payload, str):
-                obj = json.loads(message.payload)
-                config = NodeConfig(
-                    requested_replications=obj['requested_replications'],
-                    measurement_interval=obj['measurement_interval'],
-                    replicating_nodes=obj['replicating_nodes'],
-                    replication_timeout=obj['replication_timeout']
-                )
-            else:
-                config = NodeConfig.deserialize(message.payload)
+            config = NodeConfig.deserialize(message.payload)
 
             self.modify_ledger(message.sending_id, config)
 
@@ -72,7 +62,7 @@ class ConfigController:
         """ send the config to the network
         """
         if full_config:
-            return self.send_message(str(new_config))
+            return self.send_message(new_config.serialize())
 
         diff = self.config.diff_config(new_config)
         self.send_message(serialize_dict(diff))

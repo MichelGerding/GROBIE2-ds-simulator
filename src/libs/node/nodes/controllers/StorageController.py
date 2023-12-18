@@ -22,7 +22,7 @@ class StorageController:
     def __call__(self, measurement: Measurement, node_id: int) -> Measurement:
         """ store a measurement in the database """
         self.db.insert(Point(
-            time=datetime.now(timezone.utc),
+            time=measurement.datetime,
             tags={"node": hex(node_id)},
             fields={"temp": measurement.temp, "light": measurement.light}
         ))
