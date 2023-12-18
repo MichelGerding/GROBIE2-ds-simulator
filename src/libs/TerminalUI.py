@@ -18,7 +18,7 @@ class TerminalUI:
         self.stdscr.refresh()
 
         # get amount of lines in the first message
-        top_msg1_lines = len(message1) + 3
+        top_msg1_lines = len(message1)
 
         available_space = curses.COLS // 2 - 1
         message1 = '\n'.join([f'{row[0]}{" " * (available_space - len(row[0]) - len(row[1]))}{row[1]}' for row in message1])
