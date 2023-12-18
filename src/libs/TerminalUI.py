@@ -17,10 +17,17 @@ class TerminalUI:
         self.stdscr.keypad(True)
         self.stdscr.refresh()
 
-        if curses.COLS < 103:
-            raise Exception("window to small (minimum 103 columns)")
+        # get amount of lines in the first message
+        top_msg1_lines = len(message1) + 3
 
-        top_msg1_lines = 7  # TODO:: make line height dynamic
+        available_space = curses.COLS // 2 - 1
+        message1 = '\n'.join([f'{row[0]}{" " * (available_space - len(row[0]) - len(row[1]))}{row[1]}' for row in message1])
+
+        # if the message is to long throw and error that the screen is to small. also include how wide it should be
+        if max([len(row) for row in message1.split('\n')]) > curses.COLS // 2:
+            parts = message1.split('\n')
+            raise Exception(f'Screen is to small. Minimum width is {(max([len(row) for row in parts]) + 1) * 2}')
+
 
         self.top_message1 = curses.newwin(top_msg1_lines, curses.COLS // 2, 0, 0)
         self.top_message1.addstr(message1)

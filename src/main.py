@@ -10,12 +10,13 @@ from globals import globals
 
 
 def setup_ui(command_handler: CommandHandler) -> TerminalUI:
-    help_message = ("command log \n"
-                    "load [file]                 run commands from file\n"
-                    "create (node_id) (x) (y) (power)      create nodes\n"
-                    "delete (node_id)                       delete node\n"
-                    "modify (node) (replications) (delay) modify config\n"
-                    "save/print [file]      save config/network to file")
+    help_message = [("command log", ""),
+                    ("load [file]", "run commands from file"),
+                    ("create (node_id) (x) (y) (power)", "create nodes"),
+                    ("delete (node_id)", "delete node"),
+                    ("modify (node) (replications) (delay)", "modify config"),
+                    ("save/print [file]", "save config/network to file")]
+
     return TerminalUI(help_message, "Network log", command_handler)
 
 def parse_args() -> argparse.Namespace:
