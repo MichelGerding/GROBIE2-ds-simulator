@@ -33,14 +33,14 @@ class RandomNode(NetworkNode):
         self.config_controller = ConfigController(
             node_id,
             config,
-            lambda message: self.send_message(0xFF, message, ChannelID.CONFIG.value)
+            lambda message: self.send_message(0xFF, message, ChannelID.CONFIG.value)  # TODO:: implement compression of measurments
         )
 
         self.replication_bidding_controller = ReplicationController(
             self.config_controller['replication_timeout'],
             self.config_controller['requested_replications'],
             lambda: self.config_controller.get_current_replicators(self.node_id),
-            lambda winners: self.config_controller.change_config('replicating_nodes', winners)
+            lambda winners: self.config_controller.change_config(winners, key='replicating_nodes')
         )
 
         self.storage_controller = StorageController(node_id)
@@ -64,6 +64,12 @@ class RandomNode(NetworkNode):
         if self.node_id == message.sending_id:
             return
 
+        # check if node is in the ledger, but it isn't sending a config message
+        # if message.sending_id not in self.config_controller.ledger and message.channel != ChannelID.CONFIG.value:
+        #     # send a discovery message to the node
+        #     print(f'node {message.sending_id} not in node {self.node_id}\'s ledger')
+        #     return self.send_message(message.sending_id, '', ChannelID.DISCOVERY.value)
+
         # call the function that handles messages for the channel
         if hasattr(self, 'handle_' + ChannelID(message.channel).name.lower() + '_message'):
             getattr(self, 'handle_' + ChannelID(message.channel).name.lower() + '_message')(message)
@@ -74,9 +80,8 @@ class RandomNode(NetworkNode):
         """ handle messages that are send by the user. """
         # parse the clients message. this will have the following format
         # {"cmd", "node_id", "daterange?": {"start", "end"}}
-        print(f'handling client message {message.payload}')
 
-        query_info = json.loads(message.payload)
+        query_info = json.loads(message.payload.decode('utf-8'))
         node_id = query_info['node_id']
 
         # get the data from the database
@@ -141,9 +146,6 @@ class RandomNode(NetworkNode):
         self.repeated_measurement.stop()
         self.send_message(0xFF, '', ChannelID.DISCONNECT.value)
 
-    def change_config(self, key: str, value):
-        """ Change the config of the node. """
-        self.config_controller.change_config(key, value)
 
     @property
     def config(self):

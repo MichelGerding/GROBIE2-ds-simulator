@@ -44,7 +44,7 @@ class SocketNode(BaseNode, ABC):
     def propagate_message(self, message: Message) -> None:
         # TODO:: implement better routing algorithm
         message.ttl -= 1
-        self.send_message(message.receiving_id, message.payload, message.channel)
+        self.send_msg(message)
 
     def connect(self, host, port) -> Connection:
         """ connect to a socket and send the node info """
@@ -94,6 +94,10 @@ class SocketNode(BaseNode, ABC):
         self.conn.send(msg_bytes)
 
         self.messages_send_counter += 1
+
+    def send_msg(self, msg: Message):
+        msg_bytes = pickle.dumps(msg)
+        self.conn.send(msg_bytes)
 
     @abstractmethod
     def handle_message(self, message: Message):

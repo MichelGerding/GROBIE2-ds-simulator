@@ -55,7 +55,7 @@ class UserNode(SocketNode):
 
     def handle_client_message(self, message: Message):
         """ handle messages that are send by the user. """
-        print(f'handling client message {message.payload}')
+        print(f'handling client message {message.payload.decode("utf-8")}')
 
     def shutdown(self):
         """ Stop sending measurements to the network. """

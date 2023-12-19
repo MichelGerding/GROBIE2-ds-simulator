@@ -43,7 +43,7 @@ class ProcessNode(SocketNode):
             self.config_controller['replication_timeout'],
             self.config_controller['requested_replications'],
             lambda: self.config_controller.get_current_replicators(self.node_id),
-            lambda winners: self.config_controller.change_config('replicating_nodes', winners)
+            lambda winners: self.config_controller.change_config(winners, key='replicating_nodes')
         )
 
         self.storage_controller = StorageController(node_id)
@@ -134,10 +134,6 @@ class ProcessNode(SocketNode):
                 # send replication bidding message
                 self.send_message(message.sending_id, str(message.ttl), ChannelID.REPLICATION_BIDDING.value)
 
-    def change_config(self, key: str, value):
-        """ Change the config of the node. """
-        print(f'changing config {key} to {value}')
-        self.config_controller.change_config(key, value)
 
     def send_config_update(self):
         self.send_message(0xFF, str(self.config), ChannelID.CONFIG.value)

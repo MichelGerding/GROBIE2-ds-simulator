@@ -1,6 +1,6 @@
 import pickle
 
-from libs.helpers.dict import diff_dict
+from libs.helpers.dict import diff_dict, apply_diff
 
 from dataclasses import dataclass
 from copy import deepcopy
@@ -33,49 +33,47 @@ class NodeConfig:
         }, sort_keys=True)
 
     def copy(self):
-        return deepcopy(self)
+        cp = NodeConfig(0, 0, {})
+        cp.requested_replications = deepcopy(self.requested_replications)
+        cp.measurement_interval = deepcopy(self.measurement_interval)
+        cp.replicating_nodes = deepcopy(self.replicating_nodes)  # Create a new instance of replicating_nodes
+        cp.max_replications = deepcopy(self.max_replications)
+        cp.replication_timeout = deepcopy(self.replication_timeout)
+        return cp
 
     def serialize(self):
         return pickle.dumps(self)
 
     @staticmethod
     def deserialize(data: any):
-        if isinstance(data, str):
-            obj = json.loads(data)
-            return NodeConfig(
-                requested_replications=obj['requested_replications'],
-                measurement_interval=obj['measurement_interval'],
-                replicating_nodes=obj['replicating_nodes'],
-                replication_timeout=obj['replication_timeout']
-            )
-        elif isinstance(data, bytes):
-            return pickle.loads(data)
+        return pickle.loads(data)
 
     def diff_config(self, new_config):
         """ diff the config with the new config using the diff_dict. function"""
-        # a diff will consist of a set with the following type (int, any)
-        # the int will be the change. 1 if added, 0 if removed, 2 if changed
-
-        diff = {}
-
         # if they are both the same we will return an empty diff
         # we will skip the diffing step as nothing needs to change
         if self == new_config:
-            return diff
+            return {}
 
-        return diff_dict(self.__dict__, new_config.__dict__)
+        diff = diff_dict(self.__dict__, new_config.__dict__)
 
-    def apply_diff(self, diff):
+        print(json.dumps({
+            'diff': diff,
+            'old': self.__dict__,
+            'new': new_config.__dict__
+        }, indent=4, sort_keys=True))
+        return diff
+
+
+    def apply_diff(self, diff: dict):
         """ apply the diff to the config. """
-        for key, value in diff:
-            if key == 'measurement_interval':
-                self.measurement_interval = float(value)
+        new_config = apply_diff(self.__dict__, diff)
+        self.requested_replications = new_config['requested_replications']
+        self.measurement_interval = new_config['measurement_interval']
+        self.replicating_nodes = new_config['replicating_nodes']
+        self.max_replications = new_config['max_replications']
+        self.replication_timeout = new_config['replication_timeout']
 
-            if key == 'requested_replications':
-                self.requested_replications = int(value)
-
-            if key == 'replicating_nodes':
-                self.replicating_nodes = value
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__

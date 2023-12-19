@@ -39,8 +39,12 @@ class NodeRancher:
         if node_id not in self.nodes:
             return f'node {node_id} not found'
 
-        # TODO:: fix it so we can send messages from client to all nodes
-        self.nodes[node_id].change_config('measurement_interval', int(delay))
-        self.nodes[node_id].change_config('requested_replications', int(reps))
-        self.nodes[node_id].change_config('replicating_nodes', self.nodes[node_id].config.replicating_nodes)
+        # FIXME:: fix it so we can send messages from client to all nodes
+        self.nodes[node_id].config_controller.change_config({
+            'measurement_interval': int(delay),
+            'requested_replications': int(reps)
+        })
+        # self.nodes[node_id].change_config('measurement_interval', int(delay))
+        # self.nodes[node_id].change_config('requested_replications', int(reps))
+        # self.nodes[node_id].change_config('replicating_nodes', self.nodes[node_id].config.replicating_nodes)
         return f'node {node_id} updated'

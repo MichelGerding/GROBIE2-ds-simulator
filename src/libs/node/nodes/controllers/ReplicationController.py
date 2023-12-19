@@ -45,7 +45,6 @@ class ReplicationController:
 
     def decide_winner(self) -> None:
         """ Decide which node should replicate the measurement. """
-        # TODO:: implement better algorithm to decide which nodes should replicate the measurement
         winners = self.get_current_replicators()
         winner_count = self.requested_winners - len(winners)
 
