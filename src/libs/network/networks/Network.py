@@ -1,5 +1,6 @@
 import os
 import multiprocessing.connection as conn
+import random
 
 from libs.network.Channel import ChannelID
 from libs.network.NetworkGraph import NetworkGraph
@@ -10,6 +11,31 @@ import threading
 
 from libs.node.nodes.abstracts.BaseNode import BaseNode
 from libs.node.nodes.ServerSocketNode import ServerSocketNode
+
+
+def corrupt_bytes(message: bytes, chance=0.0001) -> bytes:
+    """ Modify one or more random bits in the message. """
+    new_bytes = b''
+
+    # loop over each bit
+    for b in message:
+        # convert to binary
+        b = bin(b)[2:].zfill(8)
+
+        # loop over each bit in the byte
+        for i in range(8):
+            # get a random number between 0 and 1
+            r = random.random()
+
+            # if the random number is smaller than the chance we will flip the bit
+            if r < chance:
+                # flip the bit
+                b = b[:i] + str(int(not bool(int(b[i])))) + b[i+1:]
+
+        # convert back to bytes
+        new_bytes += int(b, 2).to_bytes(1, 'big')
+
+    return new_bytes
 
 
 class Network:
@@ -57,7 +83,7 @@ class Network:
 
     def send_message(self, message: Message, node: BaseNode):
         """ send a message to the neighbours of the node """
-        globals['ui'].add_text_to_column2(f'sending message to node {message.receiving_id} on channel {message.channel} from {message.sending_id} with {message.ttl} hops\n')
+        # globals['ui'].add_text_to_column2(f'sending message to node {message.receiving_id} on channel {message.channel} from {message.sending_id} with {message.ttl} hops\n')
         # log into file
         mess_dict = {
             'sending_id': message.sending_id,
@@ -73,6 +99,9 @@ class Network:
         # check if node is in the graph
         if node not in self.graph.graph.nodes:
             return
+
+        # corrupt the payload
+        message.payload = corrupt_bytes(message.payload, 0)
 
         for n in self.graph.get_neighbours(node):
             n.rec_message(message)

@@ -12,7 +12,7 @@ from libs.RepeatedTimer import RepeatedTimer
 from libs.node.NodeConfig import NodeConfig
 from libs.network.Channel import ChannelID
 from libs.network.Message import Message
-
+from globals import globals
 
 class RandomNode(NetworkNode):
     """ This is a node that sends random measurements to the network.
@@ -64,15 +64,13 @@ class RandomNode(NetworkNode):
         if self.node_id == message.sending_id:
             return
 
-        # check if node is in the ledger, but it isn't sending a config message
-        # if message.sending_id not in self.config_controller.ledger and message.channel != ChannelID.CONFIG.value:
-        #     # send a discovery message to the node
-        #     print(f'node {message.sending_id} not in node {self.node_id}\'s ledger')
-        #     return self.send_message(message.sending_id, '', ChannelID.DISCOVERY.value)
-
         # call the function that handles messages for the channel
         if hasattr(self, 'handle_' + ChannelID(message.channel).name.lower() + '_message'):
+            # try:
             getattr(self, 'handle_' + ChannelID(message.channel).name.lower() + '_message')(message)
+            # except Exception as e:
+                # print(e)
+                # globals['ui'].add_text_to_column2(f'error receiving message on node {self.node_id}')
         else:
             print(f'No handler for channel {ChannelID(message.channel).name.lower()}')
 
@@ -95,7 +93,7 @@ class RandomNode(NetworkNode):
                 len(self.config_controller['replicating_nodes']) >= self.config.requested_replications:
             return
 
-        self.replication_bidding_controller.add_bid(message.sending_id, int(message.payload))
+        self.replication_bidding_controller.add_bid(message.sending_id, int.from_bytes(message.payload))
 
     def handle_config_message(self, message: Message):
         """ handle config messages. these messages contain the config of a node. """
@@ -125,7 +123,7 @@ class RandomNode(NetworkNode):
         # get the node that send the message config
         cnf = self.config_controller.get_nodes_config(message.sending_id)
 
-        # at this point we know who the node is and we have its config
+        # at this point we know who  the node is and we have its config
         if self.node_id in cnf.replicating_nodes:
             # if we will parse and store the measurement
             m = Measurement.deserialize(message.payload)
@@ -139,7 +137,7 @@ class RandomNode(NetworkNode):
 
             if len(cnf.replicating_nodes) < cnf.requested_replications:
                 # send replication bidding message
-                self.send_message(message.sending_id, str(message.ttl), ChannelID.REPLICATION_BIDDING.value)
+                self.send_message(message.sending_id, message.ttl.to_bytes(8, 'big'), ChannelID.REPLICATION_BIDDING.value)
 
     def shutdown(self):
         """ Stop sending measurements to the network. """

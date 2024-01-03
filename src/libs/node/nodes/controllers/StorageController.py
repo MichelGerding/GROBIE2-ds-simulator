@@ -10,6 +10,9 @@ import os
 
 class StorageController:
 
+    # TODO:: implement compressions of data
+    # TODO:: implement better storage (maybe use sqlite)
+
     def __init__(self, node_id: int):
         # generate a random file path. this is where the database will be stored.
         # the database used for testing will make use of a csv file for easy reading.

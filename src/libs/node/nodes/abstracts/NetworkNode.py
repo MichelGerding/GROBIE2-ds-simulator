@@ -25,8 +25,18 @@ class NetworkNode(BaseNode, ABC):
 
         network.join_network(self)
 
+    def handle_bytes_error(self, byte: bytes) -> bytes | None:
+        """ Handle bytes error. """
+        # TODO:: implement error detection and correction
+        return byte
+
     def rec_message(self, message: Message) -> None:
         """ handle messages that are received """
+        # check and correct errors.
+        message.payload = self.handle_bytes_error(message.payload)
+        if not message:
+            return
+
         # if the message was our own message, ignore it
         if message.sending_id == self.node_id:
             return
