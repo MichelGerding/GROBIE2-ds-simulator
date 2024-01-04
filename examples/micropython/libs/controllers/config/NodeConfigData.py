@@ -34,10 +34,12 @@ class NodeConfigData:
     replication_count: int # 2 bytes unsigned
     
 
-    def __init__(self, addr: int, measurement_interval: int, replication_count, replications=None) -> None:
+    def __init__(self, addr: int, measurement_interval: int, replication_count, replications=None, bidding_wait = 1) -> None:
         self.addr = addr
         self.measurement_interval = measurement_interval
         self.replication_count = replication_count
+        self.bidding_wait = bidding_wait
+
 
         if replications is None:
             replications = {}
@@ -45,21 +47,22 @@ class NodeConfigData:
 
     def serialize(self):
         """ serialize the node config """
-        data = umsgpack.dumps(self.__dict__)
-        return data
+        return umsgpack.dumps({
+            'addr': self.addr,
+            'measurement_interval': self.measurement_interval,
+            'replication_count': self.replication_count,
+            'replications': self.replications,
+            'bidding_wait': self.bidding_wait
+        })
     
     @staticmethod
-    def deserialize(data):
+    def deserialize(bits):
         """ deserialize the node config """
-        data = umsgpack.loads(data)
-        node_config = NodeConfigData(
-            data['addr'], # type: ignore
-            data['measurement_interval'], # type: ignore
-            data['replication_count'], # type: ignore
-            data['replications'] # type: ignore
-        )
-        return node_config
-    
+        return NodeConfigData(**umsgpack.loads(bits))
+
+    def clone(self):
+        return self.deserialize(self.serialize())
+
     def apply_diff(self, diff):
         """ apply a diff to the node config. 
             this doesnt use the apply_diff function from libs/helpers/dict.py 
@@ -99,6 +102,9 @@ class NodeConfigData:
             return False
         
         return self.__dict__ == o.__dict__
+    
+    def __setitem__(self, key, value):
+        setattr(self, key, value)
     
     def __dict__(self) -> dict:
         return {

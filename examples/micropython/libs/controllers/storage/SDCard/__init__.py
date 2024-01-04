@@ -19,8 +19,13 @@ class SDCardStorageController(IStorageController):
         self.mounted = True
         self.mount_point = mount_point
 
-        vfs = VfsFat(self.sd)
-        mount(vfs, mount_point)
+        try: 
+            vfs = VfsFat(self.sd)
+            mount(vfs, mount_point)
+        except OSError as e:
+            if e.args[0] == 1:
+                print('mount failed')
+
 
     def umount(self):
         # FIXME: check if already unmounted

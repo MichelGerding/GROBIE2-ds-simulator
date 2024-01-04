@@ -1,3 +1,5 @@
+from libs.controllers.config import NodeConfigData
+from libs.controllers.network import Frame
 from libs.controllers.network.UARTNetworkController import UARTNetworkController
 from libs.controllers.storage.StorageControllerFactory import StorageControllerFactory
 from libs.controllers.network.E220NetworkController import E220NetworkController
@@ -28,10 +30,22 @@ nc = E220NetworkController(E220(uart=uart, m0=m0, m1=m1))
 
 ##### START NODE #####
 # start event loop and run forever
-loop = asyncio.get_event_loop()
+# loop = asyncio.get_event_loop()
 node = Node(
     sensors=sensors,
     storage_controller=sc,
     network_controller=nc  # use e220 as network controller
 )
-loop.run_forever()
+# loop.run_forever()
+
+# secondConfig 
+cnf = NodeConfigData(
+    addr = 2,
+    measurement_interval = 1,
+    replication_count = 0
+)
+
+frame = Frame(Frame.FRAME_TYPES['discovery'], cnf.serialize(), 1)
+
+node.network_controller.on_message(frame.serialize())
+print(node.config_controller.ledger.items())

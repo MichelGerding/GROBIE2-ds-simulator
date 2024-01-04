@@ -25,4 +25,17 @@ class Ledger:
             self.ledger[addr] = NodeConfigData(addr, 0, 0)
 
         self.ledger[addr].apply_diff(diff)
-        
+
+    # make it iterable
+
+    def __iter__(self):
+        return iter(self.ledger)
+    
+    def __len__(self):
+        return len(self.ledger)
+    
+    def __contains__(self, addr):
+        return addr in self.ledger
+    
+    def items(self):
+        return self.ledger.items()

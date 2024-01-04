@@ -32,5 +32,5 @@ class E220NetworkController(INetworkController):
         self.e220.send(addr, frame.serialize())
 
     @property
-    def address(self) -> bytes:
-        return self.e220.address
+    def address(self) -> int:
+        return int.from_bytes(self.e220.address, 'big')

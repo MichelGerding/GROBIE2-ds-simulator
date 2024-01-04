@@ -3,19 +3,21 @@ import asyncio
 class Frame: 
     FRAME_TYPES = {
         'discovery': 0x00,
-        'data': 0x01,
-        'config': 0x02
+        'measurment': 0x01,
+        'config': 0x02,
+        'replication': 0x03
     }
 
-    def __init__(self, type: int, message: bytes, source_address):
+    def __init__(self, type: int, message: bytes, source_address, ttl=20):
         self.type = type
         self.data = message
         self.source_address = source_address
+        self.ttl = ttl
 
     def serialize(self) -> bytes:
         return b''.join([
             self.type.to_bytes(1, 'big'), 
-            self.source_address.to_bytes(1, 'big'), 
+            self.source_address.to_bytes(2, 'big'), 
             self.data
         ])
 
@@ -63,17 +65,20 @@ class INetworkController:
 
     def on_message(self, message: bytes):
         """ called when a message is recieved """
-        print(f'recieved message {message}')
-
         frame = Frame.deserialize(message)
+        print(f'recieved message of type {frame.type}: {message}')
 
-        if frame.type in self.callbacks:
-            for callback in self.callbacks[frame.type]:
-                callback(frame)
+        # get all the callback functions
+        callbacks = self.callbacks.get(frame.type, [])  # get the callbacks for the specific type
+        callbacks += self.callbacks.get(-1, [])  # get the callbacks for the wildcard
+
+        # call all the callbacks
+        for callback in callbacks:
+            callback(frame)
 
 
     @property
-    def address(self) -> bytes:
-        """ the address of the network controller """
-        return b'\x00\x00'
+    def address(self) -> int:
+        """ the address of the node """
+        return int.from_bytes(b'\x00\x00', 'big')
 
