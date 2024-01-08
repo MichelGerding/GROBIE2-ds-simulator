@@ -29,8 +29,6 @@ class ConfigController:
     
     def handle_message(self, frame: Frame):
 
-        print(frame.__dict__)
-
         # check if it is a discovery message
         if frame.type == Frame.FRAME_TYPES['discovery']:
             # parse the message
@@ -55,6 +53,9 @@ class ConfigController:
         # broadcast the new config
         self.broadcast_config(new_config=new_config)
 
+        # apply the new config to our config
+        self._config = new_config
+
     def clone_config(self):
         # clone the config
         n = self._config.clone()
@@ -70,10 +71,10 @@ class ConfigController:
         if new_config is None:
             # broadcast the config. 
             # we use the discovery as we most likely are a new node 
-            self.send_message(Frame.FRAME_TYPES['DISCOVERY'], self._config.serialize())
+            self.send_message(Frame.FRAME_TYPES['discovery'], self._config.serialize())
 
         else:
             # broadcast only the difference config
             diff = self._config.diff(new_config)
-            self.send_message(Frame.FRAME_TYPES['CONFIG'], serialize_dict(diff))
+            self.send_message(Frame.FRAME_TYPES['config'], serialize_dict(diff))
             

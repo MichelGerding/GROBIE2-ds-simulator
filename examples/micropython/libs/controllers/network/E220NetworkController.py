@@ -26,10 +26,10 @@ class E220NetworkController(INetworkController):
                 self.on_message(d)
             await asyncio.sleep(0.1)
 
-    def send_message(self, type: int, message: bytes, addr=b'\xff\xff'):
-        frame = Frame(type, message, int.from_bytes(self.e220.address, 'big'))
+    def send_message(self, type: int, message: bytes, addr=255):
+        frame = Frame(type, message, self.address, addr)
         print(f'sending frame {frame.__dict__}')
-        self.e220.send(addr, frame.serialize())
+        self.e220.send(addr.to_bytes(2, 'big'), frame.serialize())
 
     @property
     def address(self) -> int:

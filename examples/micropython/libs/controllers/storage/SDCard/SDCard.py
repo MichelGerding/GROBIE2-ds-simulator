@@ -93,6 +93,7 @@ class SDCard:
         else:
             raise OSError("couldn't determine SD card version")
 
+        self.version = 2 if self.cdv else 1
         print("[SDCard] Card version determined: {}".format("v2" if self.cdv else "v1"))
 
         # get the number of sectors
@@ -109,6 +110,8 @@ class SDCard:
             self.sectors = (c_size + 1) * (2 ** (c_size_mult + 2))
         else:
             raise OSError("SD card CSD format not supported")
+        
+
         print('[SDCard] sectors: ', self.sectors)
         print('[SDCard] capacity: {} mb'.format(self.sectors / 2048))
 
@@ -119,6 +122,11 @@ class SDCard:
 
         # set to high data rate now that it's initialised
         self.init_spi(baudrate)
+
+        self.block_size = 512
+        self.capacity = self.sectors * self.block_size
+        self.sector_count = self.sectors
+
 
     def init_card_v1(self):
         for i in range(_CMD_TIMEOUT):
@@ -236,6 +244,7 @@ class SDCard:
 
     def readblocks(self, block_num, buf):
         nblocks = len(buf) // 512
+        print(nblocks, len(buf))
         assert nblocks and not len(buf) % 512, "Buffer length is invalid"
         if nblocks == 1:
             # CMD17: set read address for single block
@@ -263,6 +272,7 @@ class SDCard:
 
     def writeblocks(self, block_num, buf):
         nblocks, err = divmod(len(buf), 512)
+        print(nblocks, len(buf), err)
         assert nblocks and not err, "Buffer length is invalid"
         if nblocks == 1:
             # CMD24: set write address for single block

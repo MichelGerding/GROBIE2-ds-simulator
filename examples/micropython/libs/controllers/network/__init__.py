@@ -8,16 +8,19 @@ class Frame:
         'replication': 0x03
     }
 
-    def __init__(self, type: int, message: bytes, source_address, ttl=20):
+    def __init__(self, type: int, message: bytes, source_address: int, destination_address: int, ttl=20):
         self.type = type
-        self.data = message
         self.source_address = source_address
+        self.destination_address = destination_address
         self.ttl = ttl
+
+        self.data = message
 
     def serialize(self) -> bytes:
         return b''.join([
             self.type.to_bytes(1, 'big'), 
             self.source_address.to_bytes(2, 'big'), 
+            self.destination_address.to_bytes(2, 'big'),
             self.data
         ])
 
@@ -25,9 +28,10 @@ class Frame:
     def deserialize(frame: bytes):
         type = frame[0]
         source_address = int.from_bytes(frame[1:3], 'big')
-        message = frame[3:]
+        destination_address = int.from_bytes(frame[3:5], 'big')
+        message = frame[5:]
 
-        return Frame(type, message, source_address)
+        return Frame(type, message, source_address, destination_address)
 
 class INetworkController: 
     """ the abstract base class for all network controllers """
@@ -52,7 +56,7 @@ class INetworkController:
         """ stop the network controller """
         self.task.cancel()
 
-    def send_message(self, type: int, message: bytes, addr=b'\xff\xff'):
+    def send_message(self, type: int, message: bytes, addr=255):
         """ send a message to the specified address """
         raise NotImplementedError()
 
@@ -66,11 +70,11 @@ class INetworkController:
     def on_message(self, message: bytes):
         """ called when a message is recieved """
         frame = Frame.deserialize(message)
-        print(f'recieved message of type {frame.type}: {message}')
 
         # get all the callback functions
-        callbacks = self.callbacks.get(frame.type, [])  # get the callbacks for the specific type
-        callbacks += self.callbacks.get(-1, [])  # get the callbacks for the wildcard
+        callbacks = self.callbacks.get(-1, [])  # get the callbacks for the wildcard
+        callbacks += self.callbacks.get(frame.type, [])  # get the callbacks for the specific type
+
 
         # call all the callbacks
         for callback in callbacks:

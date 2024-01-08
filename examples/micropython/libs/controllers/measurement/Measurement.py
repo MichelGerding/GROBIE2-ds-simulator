@@ -1,34 +1,38 @@
+import libs.external.umsgpack  as umsgpack
+
 import math
 
 class Measurement: 
 
-    lumen: int
-    temperature: float
+    data: dict[str, float | int]
+    timestamp: int
 
-    def __init__(self) -> None:
-        self.data = {}
+    def __init__(self, timestamp, **kwargs) -> None:
+        self.data = kwargs
+        self.timestamp = timestamp
 
     def encode(self):
         """ encode data to bytes """
-        temp_int = math.floor(self.data['temperature'])
-        lumen_int = math.floor(self.data['lumen'])
+        return umsgpack.dumps(self.data)
 
-        return b''.join([temp_int.to_bytes(2, 'big'), lumen_int.to_bytes(2, 'big')])
-    
     @staticmethod
-    def decode(inp: bytes):
+    def decode(bits: bytes):
         """ decode data from bytes """
-        temp_int = int.from_bytes(inp[:2], 'big')
-        lumen_int = int.from_bytes(inp[2:4], 'big')
-        
-        m = Measurement()
-        m.data['temperature'] = temp_int
-        m.data['lumen'] = lumen_int
-        
-        return m
+        return Measurement(**umsgpack.loads(bits))
 
 
-    def __str__(self) -> str:
-        return ','.join([str(value) for value in self.data.values()])
+    def __str__(self): 
+        # convert to csv
+        return ",".join([str(value) for value in self.data.values()])
 
+    def __repr__(self) -> str:
+        # convert data to json
+        msg = "{"
+        for key, value in self.data.items():
+            msg += f"\"{key}\": {value}, "
 
+        # remove the last comma and add closing bracket
+        msg = msg[:-2]
+        msg += "}"
+
+        return msg

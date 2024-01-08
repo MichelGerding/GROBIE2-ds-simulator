@@ -1,8 +1,9 @@
 from libs.controllers.config import ConfigController, NodeConfigData
+from libs.controllers.database.BinaryKV.Bsv import BsvDatabase
 from libs.controllers.measurement import MeasurementController
 from libs.controllers.measurement.Measurement import Measurement
 from libs.controllers.network import INetworkController
-from libs.controllers.network.E220NetworkController import Frame, E220NetworkController
+from libs.controllers.network.E220NetworkController import Frame
 from libs.controllers.replication import ReplicationController
 from libs.sensors import ISensor
 from libs.controllers.storage import IStorageController
@@ -13,7 +14,8 @@ class Node():
     def __init__(self, 
                  sensors: list[ISensor], 
                  storage_controller: IStorageController, 
-                 network_controller: INetworkController) -> None:
+                 network_controller: INetworkController,
+                 node_config: NodeConfigData) -> None:
         
         self.sensors = sensors
         self.storage_controller = storage_controller
@@ -30,26 +32,18 @@ class Node():
             ])
         
         self.config_controller = ConfigController(
-            config = NodeConfigData(
-                addr = network_controller.address,
-                measurement_interval = 1,
-                replication_count = 0
-            ),
+            config = node_config,
             send_message= network_controller.send_message
         )
 
         self.replication_controller = ReplicationController(self.config_controller)
         
-        # get the correct path to the data
-        self.storage_path = storage_controller.get_root_path() + 'measurements.txt'
-        try:
-            storage_controller.ensure_exists(self.storage_path)
-        except:
-            print('could not create file')
-
+        filepath = '/sd/data.db'
+        self.database_controller = BsvDatabase(filepath, self.storage_controller)
+        
 
         # Register message callbacks
-        self.network_controller.register_callback(-1, lambda frame: print('received a message'))  # -1 is a wildcard type
+        self.network_controller.register_callback(-1, lambda frame: print(f'received a message of type {frame.type} from node {frame.source_address} for node {frame.destination_address}'))  # -1 is a wildcard type
 
         self.network_controller.register_callback(Frame.FRAME_TYPES['measurment'], self.store_measurement_frame)   # decide if we want to store the measurement
         self.network_controller.register_callback(Frame.FRAME_TYPES['discovery'], self.config_controller.handle_message)  # new nodes will broadcast this type of message
@@ -62,7 +56,7 @@ class Node():
 
 
         # make and send measuremnt every 1 second
-        self.measurement_controller.start()
+        # self.measurement_controller.start()
         self.network_controller.start()
         print('node has been initialized, controllers started')
 
@@ -71,8 +65,6 @@ class Node():
 
 
     def store_measurement_frame(self, frame: Frame):
-        print('storing measurement frame')
-
         # check if we should store 
         if self.replication_controller.should_replicate(frame.source_address):
             measurement = Measurement.decode(frame.data)
@@ -91,23 +83,8 @@ class Node():
 
 
     def store_measurement(self, measurement: Measurement, address=None):
-        print('storing measurement')
-
-        f = None
-        try: 
-            f = open(self.storage_path, 'a')
-        except:
-            f = open(self.storage_path, 'w')
-
-        if address is None:
-            address = self.network_controller.address
-
-        f.write(f'{address},{str(measurement)}\n')
-
-        f.flush()
-        f.close()
-
-        return measurement
-
+        d = measurement.data.__dict__
+        d['address'] = address
         
+        self.database_controller.store(measurement.timestamp, d)
     
